@@ -14,7 +14,7 @@ print([[
            ◆ Welcome Back everyone!
 
 •==============================================•
-❖ ER GUI  | by ERC-Technology
+❖ ER GUI  | by ERC-Technology™
 ❖ Version | V.0.4.8
 ❖ Working |  It works with most games (except those with security features).
 
@@ -190,7 +190,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -70, 0, 25)
 titleLabel.Position = UDim2.new(0, 10, 0, 5)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "[ ER GUI ] | V.0.4.8 | By ERC-Technology (ERC)"
+titleLabel.Text = "[ ER GUI ] | V.0.4.8 | By ERC-Technology™ (ERC)"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 18
