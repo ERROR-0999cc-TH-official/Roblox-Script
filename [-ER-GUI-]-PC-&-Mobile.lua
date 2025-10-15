@@ -9,7 +9,7 @@ task.wait(0.2)
 warn("[ ❖ ] Loading Service-@ERC.Roblox.SP.os...")
 task.wait(0.2)
 
-warn("[ ❖ ] Loading Service-@ERC.RBX.SP.001.lau...")
+warn("[ ❖ ] Loading Service-@ERC.RBX.SP.001.lua...")
 task.wait(0.2)
 
 warn("[ ❖ ] All Services Loaded Successfully!")
