@@ -1,0 +1,3606 @@
+-- ===================================================
+-- local Services...
+local CoreGui = game:GetService("CoreGui")
+
+local UserInputService = game:GetService("UserInputService")
+
+local UIS = game:GetService("UserInputService")
+
+local uis = game:GetService("UserInputService")
+
+local TweenService = game:GetService("TweenService")
+
+local Players = game:GetService("Players")
+
+local players = game:GetService("Players")
+
+local RunService = game:GetService("RunService")
+
+local runService = game:GetService("RunService")
+
+local Lighting = game:GetService("Lighting")
+
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local LocalPlayer = Players.LocalPlayer
+local Player = game.Players.LocalPlayer
+local player = game.Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local camera = workspace.CurrentCamera
+
+-- ===================================================
+-- ระบบป้องกันการโหลด Script ซ้ำ
+local function getUIParent()
+	if gethui then
+		return gethui()
+	else
+		return game:GetService("CoreGui")
+	end
+end
+
+local function ERCunloading()
+	for _, gui in ipairs(getUIParent():GetDescendants()) do
+		if gui:IsA("ScreenGui") and gui.Name == "ERC.ScreenGui.unLoading.GUI" then
+			return true
+		end
+	end
+	return false
+end
+
+if not ERCunloading() then
+
+-- ScreenGuiun
+local ScreenGuiun = Instance.new("ScreenGui")
+ScreenGuiun.Name = "ERC.ScreenGui.unLoading.GUI"
+ScreenGuiun.DisplayOrder = math.huge
+ScreenGuiun.ResetOnSpawn = false
+
+-- ทำให้แสดงผลอยู่เหนือ Executor บางตัว
+if type(gethui) == "function" then
+	ScreenGuiun.Parent = gethui()
+elseif syn and type(syn.protect_gui) == "function" then
+	syn.protect_gui(ScreenGuiun)
+	ScreenGuiun.Parent = CoreGui
+elseif CoreGui:FindFirstChild("RobloxGui") then
+	ScreenGuiun.Parent = CoreGui:FindFirstChild("RobloxGui")
+else
+	ScreenGuiun.Parent = CoreGui
+end
+
+-- ===================================================
+-- ตรวจสอบการสร้าง CoreGui, Humanoid
+repeat task.wait() until game:IsLoaded()
+
+-- CoreGui Loading...
+repeat task.wait() until game:FindFirstChild("CoreGui") and pcall(function() return game.CoreGui end)
+
+-- Humanoid Loading...
+repeat task.wait() until LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+
+-- ===================================================
+-- ฟังก์ชันสร้าง UICorner สำหรับมุมโค้ง
+local function createUICorner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = radius or UDim.new(0, 6) -- default 10
+    corner.Parent = parent
+    return corner
+end
+
+-- ฟังก์ชันสร้าง UIStroke สำหรับเส้นขอบ
+local function createUIStroke(parent, thickness, color)
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = thickness or 1.5 -- ค่าเริ่มต้น
+    stroke.Color = color or Color3.fromRGB(50, 50, 50)
+    stroke.Parent = parent
+    return stroke
+end
+
+-- ฟังก์ชันสร้าง Layout + Padding ให้กับ Container
+local function createListLayout(parent, paddingBetween, paddingTopBottom)
+    -- UIListLayout
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, paddingBetween or 10)
+    layout.Parent = parent
+
+    -- UIPadding
+    local pad = Instance.new("UIPadding")
+    pad.PaddingTop = UDim.new(0, paddingTopBottom or 5)
+    pad.PaddingBottom = UDim.new(0, paddingTopBottom or 5)
+    pad.Parent = parent
+
+    return layout, pad
+end
+
+local function DraggingGUI(frame)
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local function update(input)
+        if not dragStart or not startPos then return end
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+        -- previous code referenced iconButton/iconPosition here; removed to avoid undefined globals
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            dragInput = input
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    dragInput = nil
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
+end
+
+-- ระบบแจ้งเตือน
+local function Notification(title, text, icon, duration)
+    repeat task.wait() until pcall(function()
+        return game.StarterGui:SetCore("SendNotification", {})
+    end)
+
+    game.StarterGui:SetCore("SendNotification", {
+        Title = title,
+        Text = text,
+        Icon = icon,
+        Duration = duration or 1
+    })
+end
+
+-- ===================================================
+-- ScreenGui
+local screenGuiUS = Instance.new("ScreenGui")
+screenGuiUS.Name = "ERC.ScreenGui.Loading.GUI"
+screenGuiUS.DisplayOrder = math.huge
+screenGuiUS.ResetOnSpawn = false
+
+-- ทำให้แสดงผลอยู่เหนือ Executor บางตัว
+if type(gethui) == "function" then
+	screenGuiUS.Parent = gethui()
+elseif syn and type(syn.protect_gui) == "function" then
+	syn.protect_gui(screenGuiUS)
+	screenGuiUS.Parent = CoreGui
+elseif CoreGui:FindFirstChild("RobloxGui") then
+	screenGuiUS.Parent = CoreGui:FindFirstChild("RobloxGui")
+else
+	screenGuiUS.Parent = CoreGui
+end
+
+
+-- Main Frame
+local mainAFrame = Instance.new("Frame")
+mainAFrame.Size = UDim2.new(0, 280, 0, 125)
+mainAFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainAFrame.Parent = screenGuiUS
+mainAFrame.Active = true
+mainAFrame.ZIndex = 500
+createUICorner(mainAFrame)
+createUIStroke(mainAFrame)
+
+-- Center mainAFrame
+local function centermainAFrame()
+local viewportSize = camera and camera.ViewportSize or Vector2.new(1280, 720)
+mainAFrame.Position = UDim2.new(
+0, (viewportSize.X - mainAFrame.AbsoluteSize.X) / 2,
+0, (viewportSize.Y - mainAFrame.AbsoluteSize.Y) / 3.5
+)
+end
+
+centermainAFrame()
+
+-- ===================================================
+-- อัปเดตตำแหน่งเมื่อจอเปลี่ยน
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+centermainAFrame()
+end)
+
+-- ===================================================
+-- Label ข้อความ 01
+local loadingLabel = Instance.new("TextLabel")
+loadingLabel.Size = UDim2.new(1, 0, 0, 50)
+loadingLabel.Position = UDim2.new(0, 0, 0, 20)
+loadingLabel.BackgroundTransparency = 1
+loadingLabel.Text = "Script Loading..."
+loadingLabel.TextSize = 30
+loadingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadingLabel.Font = Enum.Font.SourceSansBold
+loadingLabel.ZIndex = 1000
+loadingLabel.Parent = mainAFrame
+createUICorner(loadingLabel)
+
+-- Frame แถบโหลด (พื้นหลัง)
+local progressBg = Instance.new("Frame")
+progressBg.Size = UDim2.new(0.8, 0, 0, 20)
+progressBg.Position = UDim2.new(0.1, 0, 0.6, 16)
+progressBg.BackgroundColor3 = Color3.fromRGB(20, 40, 120)
+progressBg.BorderSizePixel = 0
+progressBg.ZIndex = 1000
+progressBg.Parent = mainAFrame
+createUICorner(progressBg)
+
+-- แถบโหลด (จริง)
+local progressBar = Instance.new("Frame")
+progressBar.Size = UDim2.new(0, 0, 1, 0)
+progressBar.BackgroundColor3 = Color3.fromRGB(150, 220, 255)
+progressBar.BorderSizePixel = 0
+progressBar.ZIndex = 1001
+progressBar.Parent = progressBg
+createUICorner(progressBar)
+
+-- ===================================================
+-- คุมความเร็วโหลด (เวลาทั้งหมด วินาที)
+local loadingTime = 0.1
+
+-- โหลดแบบ Progress (ไหลลื่น)
+task.spawn(function()
+    progressBar:TweenSize(UDim2.new(1, 0, 1, 0), "Out", "Quad", loadingTime, true)
+    
+        -- รอจนกว่าจะโหลดเสร็จ
+    task.wait(loadingTime + 0.001)
+    
+    -- ปิดหน้าต่างโหลด
+    mainAFrame:Destroy()
+    screenGuiUS:Destroy()
+    
+-- ===================================================
+-- erc
+
+-- ===================================================
+-- README Loading...
+warn("[ ❖ ] ERC SYSTEM : Initializing...")
+print([[<README>
+◇======================================================◇
+                 ❖ ERC GUI — System Info
+◇======================================================◇
+❖ Version     | V.0.5.4
+❖ Project     | ERC-RBX-SP-001
+❖ Developer   | ERC-Technology™ | erc.t.tm.th
+❖ Discord     | https://discord.gg/kShJy84u2v
+❖ Status      | Executor — Some games may be unsupported
+◇======================================================◇
+]])
+
+-- ===================================================
+-- ERC GUI
+
+-- ===================================================
+-- สร้าง ScreenERCGui
+local ScreenERCGui = Instance.new("ScreenGui")
+ScreenERCGui.Name = "ERC.GUI.ScreenGui.Main"
+ScreenERCGui.DisplayOrder = math.huge
+ScreenERCGui.ResetOnSpawn = false
+
+-- ทำให้แสดงผลอยู่เหนือ Executor บางตัว
+if type(gethui) == "function" then
+	ScreenERCGui.Parent = gethui()
+elseif syn and type(syn.protect_gui) == "function" then
+	syn.protect_gui(ScreenERCGui)
+	ScreenERCGui.Parent = CoreGui
+elseif CoreGui:FindFirstChild("RobloxGui") then
+	ScreenERCGui.Parent = CoreGui:FindFirstChild("RobloxGui")
+else
+	ScreenERCGui.Parent = CoreGui
+end
+
+-- ===================================================
+-- สร้าง MainFrame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 600, 0, 325)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BackgroundTransparency = 0
+MainFrame.Parent = ScreenERCGui
+MainFrame.Active = true
+MainFrame.ZIndex = 5000
+createUICorner(MainFrame)
+createUIStroke(MainFrame, 2)
+DraggingGUI(MainFrame) -- เรียกใช้งาน Drag function
+
+-- Center MainFrame
+local function centerMainFrame()
+local viewportSize = camera and camera.ViewportSize or Vector2.new(1280, 720)
+MainFrame.Position = UDim2.new(
+0, (viewportSize.X - MainFrame.AbsoluteSize.X) / 2,
+0, (viewportSize.Y - MainFrame.AbsoluteSize.Y) / 10
+)
+end
+
+centerMainFrame()
+
+-- ===================================================
+-- Main Title GUI
+local MaintitleLabel = Instance.new("TextLabel")
+MaintitleLabel.Size = UDim2.new(1, -70, 0, 25)
+MaintitleLabel.Position = UDim2.new(0, 10, 0, 5)
+MaintitleLabel.BackgroundTransparency = 1
+MaintitleLabel.Text = "ERC GUI | V.0.5.4 | Product of Thailand | PC & Mobile"
+MaintitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+MaintitleLabel.Font = Enum.Font.SourceSansBold
+MaintitleLabel.TextSize = 18
+MaintitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+MaintitleLabel.ZIndex = 10000
+MaintitleLabel.Parent = MainFrame
+
+-- Main Separator
+local Mainseparator = Instance.new("Frame")
+Mainseparator.Size = UDim2.new(1, 0, 0, 2)
+Mainseparator.Position = UDim2.new(0, 0, 0, 35)
+Mainseparator.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Mainseparator.BorderSizePixel = 0
+Mainseparator.ZIndex = 10000
+Mainseparator.Parent = MainFrame
+
+-- Main Close Button
+local MaincloseButton = Instance.new("TextButton")
+MaincloseButton.Size = UDim2.new(0, 25, 0, 25)
+MaincloseButton.Position = UDim2.new(1, -30, 0, 5)
+MaincloseButton.BackgroundTransparency = 1
+MaincloseButton.Text = "X"
+MaincloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MaincloseButton.Font = Enum.Font.SourceSansBold
+MaincloseButton.TextSize = 18
+MaincloseButton.ZIndex = 10000
+MaincloseButton.Parent = MainFrame
+
+--[[ Main Destroy ScreenGui
+MaincloseButton.MouseButton1Click:Connect(function()
+ScreenERCGui:Destroy()
+ScreenGuiAll:Destroy()
+ScreenGuiBW:Destroy()
+end)
+]]
+
+-- Main Minimize Button
+local MainminimizeButton = Instance.new("TextButton")
+MainminimizeButton.Size = UDim2.new(0, 25, 0, 25)
+MainminimizeButton.Position = UDim2.new(1, -60, 0, 5)
+MainminimizeButton.BackgroundTransparency = 1
+MainminimizeButton.Text = "—"
+MainminimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainminimizeButton.Font = Enum.Font.SourceSansBold
+MainminimizeButton.TextSize = 18
+MainminimizeButton.ZIndex = 10000
+MainminimizeButton.Parent = MainFrame
+
+-- Main Icon Button
+local MainiconButton = Instance.new("Frame")
+MainiconButton.Size = UDim2.new(0, 150, 0, 35)
+MainiconButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainiconButton.ZIndex = 5000
+MainiconButton.Parent = ScreenERCGui
+MainiconButton.Active = true
+createUICorner(MainiconButton) 
+createUIStroke(MainiconButton)
+DraggingGUI(MainiconButton) -- เรียกใช้งาน Drag function
+
+-- Main IconText
+local MainiconText = Instance.new("TextButton")
+MainiconText.Size = UDim2.new(0, 100, 0, 35)
+MainiconText.Position = UDim2.new(0, 0, 0, 0)
+MainiconText.BackgroundTransparency = 1
+MainiconText.ZIndex = 6000
+MainiconText.Text = "     ERC GUI"
+MainiconText.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainiconText.TextXAlignment = Enum.TextXAlignment.Left
+MainiconText.Font = Enum.Font.SourceSansBold
+MainiconText.TextSize = 20
+MainiconText.Parent = MainiconButton
+createUICorner(MainiconText) 
+
+-- Main เส้นขั้น |
+local MainsidebarDivider = Instance.new("Frame")
+MainsidebarDivider.Size = UDim2.new(0, 2, 1, 0)  
+MainsidebarDivider.Position = UDim2.new(0,  100, 0, 0)  
+MainsidebarDivider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+MainsidebarDivider.BorderSizePixel = 0  
+MainsidebarDivider.BackgroundTransparency = 0
+MainsidebarDivider.ZIndex = 6000
+MainsidebarDivider.Parent = MainiconButton
+
+-- Main Center iconButton
+local function centerMainIconButton()
+local viewportSize = camera and camera.ViewportSize or Vector2.new(1280, 720)
+MainiconButton.Position = UDim2.new(
+0, (viewportSize.X - MainiconButton.AbsoluteSize.X) / 2,
+0, (viewportSize.Y - MainiconButton.AbsoluteSize.Y) / 100
+)
+end
+
+centerMainIconButton()
+
+-- ===================================================
+-- Restore / Minimize
+MainiconText.MouseButton1Click:Connect(function()
+MainFrame.Visible = true
+MainiconButton.Visible = false
+end)
+
+MainminimizeButton.MouseButton1Click:Connect(function()
+MainFrame.Visible = false
+MainiconButton.Visible = true
+end)
+
+-- ===================================================
+-- เริ่มต้น
+MainFrame.Visible = true
+MainiconButton.Visible = false
+
+-- ===================================================
+-- Center ทั้งคู่เมื่อขนาดจอเปลี่ยน
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+centerMainFrame()
+centerMainIconButton()
+end)
+
+-- ===================================================  
+-- Sidebar (เมนูด้านซ้าย)  
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 180, 1, -35)  
+sidebar.Position = UDim2.new(0, 0, 0, 35)  
+sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)  
+sidebar.BorderSizePixel = 0  
+sidebar.BackgroundTransparency = 1  
+sidebar.ZIndex = 20000
+sidebar.Active = true
+sidebar.Parent = MainFrame  
+createUICorner(sidebar)
+  
+-- เส้นขั้น Sidebar | Content  
+local sidebarDivider = Instance.new("Frame")
+sidebarDivider.Size = UDim2.new(0, 2, 1, 0)  
+sidebarDivider.Position = UDim2.new(1, -2, 0, 0)  
+sidebarDivider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+sidebarDivider.BorderSizePixel = 0  
+sidebarDivider.BackgroundTransparency = 0  
+sidebarDivider.ZIndex = 20001
+sidebarDivider.Parent = sidebar  
+
+-- ===================================================  
+-- สร้าง Pages (ฟังก์ชัน)  
+local pages = {}  
+  
+local function switchPage(pageName)  
+      for name, page in pairs(pages) do  
+         page.Visible = (name == pageName)  
+       end  
+end  
+
+-- ===================================================  
+-- สร้าง ScreenGuiAll หลัก
+local ScreenGuiAll = Instance.new("ScreenGui")
+ScreenGuiAll.Name = "ERC.GUI.ScreenGui.All"
+ScreenGuiAll.DisplayOrder = 2147483640
+ScreenGuiAll.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGuiAll.ResetOnSpawn = false
+
+-- ทำให้แสดงผลอยู่เหนือ Executor บางตัว
+if type(gethui) == "function" then
+	ScreenGuiAll.Parent = gethui()
+elseif syn and type(syn.protect_gui) == "function" then
+	syn.protect_gui(ScreenGuiAll)
+	ScreenGuiAll.Parent = CoreGui
+elseif CoreGui:FindFirstChild("RobloxGui") then
+	ScreenGuiAll.Parent = CoreGui:FindFirstChild("RobloxGui")
+else
+	ScreenGuiAll.Parent = CoreGui
+end
+
+-- ===================================================  
+-- ==========================
+-- Function: ฟังก์ชัน สร้างแผงสำหรับหัวข้อกลุ่ม
+-- ==========================
+
+local function createToggleSection(parent, name, yPos)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -50, 0, 35)
+    container.Position = UDim2.new(0, 25, 0, yPos)
+    container.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    container.ZIndex = 20000
+    container.Parent = parent
+    createUICorner(container)
+    createUIStroke(container, 2, Color3.fromRGB(45, 45, 45))
+
+    local labelFrame = Instance.new("Frame")
+    labelFrame.Size = UDim2.new(0, 6, 0, 28)
+    labelFrame.Position = UDim2.new(0, 8, 0, 3.5)
+    labelFrame.BackgroundColor3 = Color3.fromRGB(45,45,45)
+    labelFrame.BackgroundTransparency = 0
+    labelFrame.ZIndex = 20001
+    labelFrame.Parent = container
+    createUICorner(labelFrame, UDim.new(0, 10))
+    
+    -- Label
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.45, 0, 1, 0)
+    label.Position = UDim2.new(0, 18, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 20
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 20001
+    label.Parent = container
+
+end
+
+-- ==========================
+-- Function: ฟังก์ชัน สร้างแผงสำหรับเปิดใช้งานทั่วไ  (เปิด/ปิด)
+-- ==========================
+
+local function createToggle(parent, name, yPos)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -50, 0, 35)
+    container.Position = UDim2.new(0, 25, 0, yPos)
+    container.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    container.ZIndex = 20000
+    container.Parent = parent
+    createUICorner(container)
+
+    -- ขอบหลัก (เทา)
+    local mainBorder = Instance.new("UIStroke")
+    mainBorder.Color = Color3.fromRGB(45, 45, 45)
+    mainBorder.Thickness = 2
+    mainBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    mainBorder.Parent = container
+
+    -- ขอบฟ้าชั่วคราว (แสงกระพริบ)
+    local flashBorder = Instance.new("UIStroke")
+    flashBorder.Color = Color3.fromRGB(0, 150, 255)
+    flashBorder.Thickness = 2
+    flashBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    flashBorder.Enabled = false
+    flashBorder.Parent = container
+
+    -- Label
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 8, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 20001
+    label.Parent = container
+
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0.45, -20, 0.8, 0)
+    toggleBtn.Position = UDim2.new(0.55, 15, 0.1, 0)
+    toggleBtn.BackgroundTransparency = 1
+    toggleBtn.Text = ""
+    toggleBtn.ZIndex = 20001
+    toggleBtn.Parent = container
+    createUICorner(toggleBtn)
+
+    -- จุดไฟสถานะ (เปิด/ปิด)
+    local statusLight = Instance.new("Frame")
+    statusLight.Size = UDim2.new(0, 20, 0, 20)
+    statusLight.Position = UDim2.new(1, -30, 0.5, -10)
+    statusLight.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    statusLight.BorderSizePixel = 0
+    statusLight.ZIndex = 20002
+    statusLight.Parent = container
+    createUICorner(statusLight)
+    createUIStroke(statusLight, 2, Color3.fromRGB(45,45,45))
+
+    local state = false
+
+    toggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+
+        -- ขอบจริงเป็นฟ้า → กลับเทา
+        TweenService:Create(mainBorder, TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Color = Color3.fromRGB(0, 150, 255)
+        }):Play()
+
+        task.delay(0.6, function()
+            TweenService:Create(mainBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                Color = Color3.fromRGB(45, 45, 45)
+            }):Play()
+        end)
+
+        -- ขอบฟ้ากระพริบ
+        flashBorder.Enabled = true
+        flashBorder.Transparency = 0
+        TweenService:Create(flashBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Transparency = 1
+        }):Play()
+
+        -- ไฟติด/ดับ
+        if state then
+            statusLight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            statusLight.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        end
+    end)
+
+    return function()
+        return state
+    end
+end
+
+-- ==========================
+-- Function: ฟังก์ชัน สร้างแผงสำหรับใส่ข้อความ
+-- ==========================
+
+local function createToggleText(parent, name, PlaceholderText, yPos)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -50, 0, 35)
+    container.Position = UDim2.new(0, 25, 0, yPos)
+    container.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    container.ZIndex = 20000
+    container.Parent = parent
+    createUICorner(container)
+
+    -- ขอบหลักสีเทา
+    local mainBorder = Instance.new("UIStroke")
+    mainBorder.Color = Color3.fromRGB(45, 45, 45)
+    mainBorder.Thickness = 2
+    mainBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    mainBorder.Parent = container
+
+    -- ขอบฟ้าชั่วคราว (เหมือน toggle)
+    local flashBorder = Instance.new("UIStroke")
+    flashBorder.Color = Color3.fromRGB(0, 150, 255)
+    flashBorder.Thickness = 2
+    flashBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    flashBorder.Enabled = false
+    flashBorder.Parent = container
+
+    -- Label
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.45, 0, 1, 0)
+    label.Position = UDim2.new(0, 8, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 20001
+    label.Parent = container
+    
+    local inputBoxFrame = Instance.new("Frame")
+    inputBoxFrame.Size = UDim2.new(0.45, -20, 0.8, 0)
+    inputBoxFrame.Position = UDim2.new(0.55, 15, 0.1, 0)
+    inputBoxFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    inputBoxFrame.ZIndex = 20001
+    inputBoxFrame.Parent = container
+    createUICorner(inputBoxFrame)
+    createUIStroke(inputBoxFrame, 1, Color3.fromRGB(45,45,45))
+    
+       -- TextBox
+    local inputBox = Instance.new("TextBox")
+    inputBox.Size = UDim2.new(0.45, -20, 0.8, 0)
+    inputBox.Position = UDim2.new(0.55, 15, 0.1, 0)
+    inputBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    inputBox.BackgroundTransparency = 1
+    inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    inputBox.PlaceholderText = PlaceholderText
+    inputBox.Text = ""
+    inputBox.TextXAlignment = Enum.TextXAlignment.Center
+    inputBox.Font = Enum.Font.SourceSansBold
+    inputBox.TextSize = 16
+    inputBox.ClearTextOnFocus = true
+    inputBox.TextWrapped = true
+    inputBox.ZIndex = 20002
+    inputBox.Parent = container
+    createUICorner(inputBox)
+
+    -- เมื่อเริ่มพิมพ์ (Focused)
+    inputBox.Focused:Connect(function()
+        -- เปลี่ยนขอบหลักเป็นฟ้า (Smooth)
+        TweenService:Create(mainBorder, TweenInfo.new(0.12, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Color = Color3.fromRGB(0, 150, 255)
+        }):Play()
+
+        -- Flash border ฟ้าแบบ Fade-out
+        flashBorder.Enabled = true
+        flashBorder.Transparency = 0
+        TweenService:Create(flashBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Transparency = 1
+        }):Play()
+    end)
+
+    -- เมื่อเลิกพิมพ์ (FocusLost)
+    inputBox.FocusLost:Connect(function()
+        -- กลับเป็นสีเทาแบบ Smooth
+        TweenService:Create(mainBorder, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Color = Color3.fromRGB(45, 45, 45)
+        }):Play()
+
+        flashBorder.Enabled = false
+    end)
+
+    return inputBox
+end
+
+-- ==========================
+-- Function: ฟังก์ชัน สร้างแผงสำหรับรัน Script ได้
+-- ==========================
+
+local function createToggleButton(parent, name, Text, yPos, scriptFunc)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -50, 0, 35)
+    container.Position = UDim2.new(0, 25, 0, yPos)
+    container.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    container.ZIndex = 20000
+    container.Parent = parent
+    createUICorner(container)
+
+    -- ขอบหลักสีเทา
+    local mainBorder = Instance.new("UIStroke")
+    mainBorder.Color = Color3.fromRGB(45, 45, 45)
+    mainBorder.Thickness = 2
+    mainBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    mainBorder.Parent = container
+
+    -- ขอบฟ้าชั่วคราว (เหมือน toggle)
+    local flashBorder = Instance.new("UIStroke")
+    flashBorder.Color = Color3.fromRGB(0, 150, 255)
+    flashBorder.Thickness = 2
+    flashBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    flashBorder.Enabled = false
+    flashBorder.Parent = container
+
+    -- Label
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.45, 0, 1, 0)
+    label.Position = UDim2.new(0, 8, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 20001
+    label.Parent = container
+
+    -- ปุ่มแทน TextBox
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.45, -20, 0.8, 0)
+    btn.Position = UDim2.new(0.55, 15, 0.1, 0)
+    btn.BackgroundTransparency = 1
+    btn.TextColor3 = Color3.fromRGB(100, 100, 100)
+    btn.Text = "                                            " .. Text
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+    btn.ZIndex = 20001
+    btn.Parent = container
+    createUICorner(btn)
+
+    -- เอฟเฟกต์ขอบเมื่อกดปุ่ม
+    btn.MouseButton1Click:Connect(function()
+        -- เปลี่ยนขอบหลักเป็นฟ้า
+        TweenService:Create(mainBorder, TweenInfo.new(0.1, Enum.EasingStyle.Sine), {
+            Color = Color3.fromRGB(0, 150, 255)
+        }):Play()
+
+        -- ค่อย fade กลับเป็นเทา
+        task.delay(0.6, function()
+            TweenService:Create(mainBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {
+                Color = Color3.fromRGB(45, 45, 45)
+            }):Play()
+        end)
+
+        -- Flash (ขอบฟ้าวาบ)
+        flashBorder.Enabled = true
+        flashBorder.Transparency = 0
+        TweenService:Create(flashBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {
+            Transparency = 1
+        }):Play()
+
+        -- รันฟังก์ชันเหมือน Toggle จริง ๆ
+        if scriptFunc then
+            task.spawn(function()
+                pcall(scriptFunc)
+            end)
+        end
+    end)
+
+    return btn
+end
+
+-- ==========================
+-- Function: ฟังก์ชัน สร้างแผงสำหรับปรับสีได้
+-- ==========================
+
+local function createToggleColorPicker(parent, name, yPos, defaultColor)
+
+    -- helper functions (ถ้าในไฟล์คุณมีแล้วก็ไม่จำเป็นต้องซ้ำ แต่ใส่ไว้เพื่อให้ฟังก์ชันนี้ทำงานได้ standalone)
+    local function color3ToRGBInts(c)
+        return math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5)
+    end
+    local function rgbIntsToColor3(r,g,b)
+        return Color3.fromRGB(math.clamp(math.floor(r+0.5),0,255), math.clamp(math.floor(g+0.5),0,255), math.clamp(math.floor(b+0.5),0,255))
+    end
+    local function color3ToHSV(c)
+        return Color3.toHSV(c)
+    end
+    local function safeParseInt(str)
+        local n = tonumber(str)
+        if not n then return nil end
+        return math.floor(n + 0.5)
+    end
+
+    -- container หลัก
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -50, 0, 35)
+    container.Position = UDim2.new(0, 25, 0, yPos)
+    container.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    container.ZIndex = 20000
+    container.Parent = parent
+    createUICorner(container)
+
+    -- borders
+    local mainBorder = Instance.new("UIStroke")
+    mainBorder.Color = Color3.fromRGB(45,45,45)
+    mainBorder.Thickness = 2
+    mainBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    mainBorder.Parent = container
+
+    local flashBorder = Instance.new("UIStroke")
+    flashBorder.Color = Color3.fromRGB(0,150,255)
+    flashBorder.Thickness = 2
+    flashBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    flashBorder.Enabled = false
+    flashBorder.Parent = container
+
+    -- label
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.45, 0, 1, 0)
+    label.Position = UDim2.new(0,8,0,0)
+    label.BackgroundTransparency = 1
+    label.Text = name or "Color"
+    label.TextColor3 = Color3.new(1,1,1)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 20001
+    label.Parent = container
+
+    -- btn (คืนค่าเป็น btn)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.45, -20, 0.8, 0)
+    btn.Position = UDim2.new(0.55, 15, 0.1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.ZIndex = 20001
+    btn.Parent = container
+    createUICorner(btn)
+
+    -- status light
+    local statusLight = Instance.new("Frame")
+    statusLight.Size = UDim2.new(0.45, -120, 0.8, 0)
+    statusLight.Position = UDim2.new(0.55, 115, 0.1, 0)
+    statusLight.BackgroundColor3 = defaultColor
+    statusLight.BackgroundTransparency = 0
+    statusLight.BorderSizePixel = 0
+    statusLight.ZIndex = 20002
+    statusLight.Parent = container
+    createUICorner(statusLight)
+    createUIStroke(statusLight, 2, Color3.fromRGB(45,45,45))
+
+    -- panel container
+    local containerRGB = Instance.new("Frame")
+    containerRGB.Size = UDim2.new(0,300,0,240)
+    containerRGB.AnchorPoint = Vector2.new(0.5,0.5)
+    containerRGB.Position = UDim2.new(0,300,0,162.5)
+    containerRGB.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    containerRGB.Visible = false
+    containerRGB.Active = true
+    containerRGB.ZIndex = 30000
+    containerRGB.Parent = MainFrame
+    createUICorner(containerRGB)
+    createUIStroke(containerRGB, 2, Color3.fromRGB(50,50,50))
+
+-- input boxes R G B  
+local inputBoxFrameR = Instance.new("Frame")  
+inputBoxFrameR.Size = UDim2.new(0,80,0,30)  
+inputBoxFrameR.AnchorPoint = Vector2.new(0.5,0.5)  
+inputBoxFrameR.Position = UDim2.new(0,250,0,30)  
+inputBoxFrameR.BackgroundColor3 = Color3.fromRGB(10,10,10)  
+inputBoxFrameR.ZIndex = 30001  
+inputBoxFrameR.Parent = containerRGB  
+createUICorner(inputBoxFrameR)  
+createUIStroke(inputBoxFrameR, 2, Color3.fromRGB(45,45,45))  
+  
+local inputBoxFrameG = Instance.new("Frame")  
+inputBoxFrameG.Size = UDim2.new(0,80,0,30)  
+inputBoxFrameG.AnchorPoint = Vector2.new(0.5,0.5)  
+inputBoxFrameG.Position = UDim2.new(0,250,0,68)  
+inputBoxFrameG.BackgroundColor3 = Color3.fromRGB(10,10,10)  
+inputBoxFrameG.ZIndex = 30001  
+inputBoxFrameG.Parent = containerRGB  
+createUICorner(inputBoxFrameG)  
+createUIStroke(inputBoxFrameG, 2, Color3.fromRGB(45,45,45))  
+  
+local inputBoxFrameB = Instance.new("Frame")  
+inputBoxFrameB.Size = UDim2.new(0,80,0,30)  
+inputBoxFrameB.AnchorPoint = Vector2.new(0.5,0.5)  
+inputBoxFrameB.Position = UDim2.new(0,250,0,106)  
+inputBoxFrameB.BackgroundColor3 = Color3.fromRGB(10,10,10)  
+inputBoxFrameB.ZIndex = 30001  
+inputBoxFrameB.Parent = containerRGB  
+createUICorner(inputBoxFrameB)  
+createUIStroke(inputBoxFrameB, 2, Color3.fromRGB(45,45,45))  
+  
+local inputBoxR = Instance.new("TextBox")  
+inputBoxR.Size = UDim2.new(0,80,0,30)  
+inputBoxR.AnchorPoint = Vector2.new(0.5,0.5)  
+inputBoxR.Position = UDim2.new(0,40,0,15)  
+inputBoxR.BackgroundTransparency = 1  
+inputBoxR.TextColor3 = Color3.fromRGB(255,255,255)  
+inputBoxR.PlaceholderText = "0 to 255"  
+inputBoxR.Text = "0"  
+inputBoxR.TextXAlignment = Enum.TextXAlignment.Center  
+inputBoxR.Font = Enum.Font.SourceSansBold  
+inputBoxR.TextSize = 16  
+inputBoxR.ClearTextOnFocus = true  
+inputBoxR.TextWrapped = true  
+inputBoxR.ZIndex = 30002  
+inputBoxR.Parent = inputBoxFrameR  
+createUICorner(inputBoxR)  
+
+local inputBoxG = inputBoxR:Clone()  
+inputBoxG.Text = "150"  
+inputBoxG.Parent = inputBoxFrameG  
+createUICorner(inputBoxG)  
+
+local inputBoxB = inputBoxR:Clone()  
+inputBoxB.Text = "255"  
+inputBoxB.Parent = inputBoxFrameB  
+createUICorner(inputBoxB)  
+
+    -- FrameBarRGB (preview area)
+    local FrameBarRGB = Instance.new("Frame")
+    FrameBarRGB.Size = UDim2.new(0,190,0,106)
+    FrameBarRGB.AnchorPoint = Vector2.new(0.5,0.5)
+    FrameBarRGB.Position = UDim2.new(0,105,0,68)
+    FrameBarRGB.BackgroundColor3 = defaultColor
+    FrameBarRGB.ZIndex = 30001
+    FrameBarRGB.Parent = containerRGB
+    createUICorner(FrameBarRGB)
+    createUIStroke(FrameBarRGB, 2, Color3.fromRGB(45,45,45))
+
+    -- sliderHue
+    local sliderBarRGB = Instance.new("Frame")
+    sliderBarRGB.Size = UDim2.new(0,280,0,14)
+    sliderBarRGB.AnchorPoint = Vector2.new(0.5,0.5)
+    sliderBarRGB.Position = UDim2.new(0,150,0,140)
+    sliderBarRGB.ZIndex = 30001
+    sliderBarRGB.Parent = containerRGB
+    createUICorner(sliderBarRGB)
+    createUIStroke(sliderBarRGB, 2, Color3.fromRGB(45,45,45))
+
+    -- Hue gradient (use limited keypoints, HSV-based)
+    local sRGB_grad = Instance.new("UIGradient")
+    sRGB_grad.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.00, Color3.fromHSV(0.00,1,1)),
+        ColorSequenceKeypoint.new(0.17, Color3.fromHSV(0.17,1,1)),
+        ColorSequenceKeypoint.new(0.34, Color3.fromHSV(0.34,1,1)),
+        ColorSequenceKeypoint.new(0.51, Color3.fromHSV(0.51,1,1)),
+        ColorSequenceKeypoint.new(0.68, Color3.fromHSV(0.68,1,1)),
+        ColorSequenceKeypoint.new(0.85, Color3.fromHSV(0.85,1,1)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromHSV(0.00,1,1)),
+    }
+    sRGB_grad.Parent = sliderBarRGB
+
+    -- sliderAlpha (transparency)
+    local sliderBarBT = Instance.new("Frame")
+    sliderBarBT.Size = UDim2.new(0,280,0,14)
+    sliderBarBT.AnchorPoint = Vector2.new(0.5,0.5)
+    sliderBarBT.Position = UDim2.new(0,150,0,170)
+    sliderBarBT.ZIndex = 30001
+    sliderBarBT.Parent = containerRGB
+    createUICorner(sliderBarBT)
+    createUIStroke(sliderBarBT, 2, Color3.fromRGB(45,45,45))
+
+    local sBT_grad = Instance.new("UIGradient")
+    sBT_grad.Color = ColorSequence.new{ ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255)) }
+    sBT_grad.Transparency = NumberSequence.new{ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }
+    sBT_grad.Parent = sliderBarBT
+
+    -- overlay (dimming)
+    local ScreenDrunk = Instance.new("Frame")
+    ScreenDrunk.Size = UDim2.new(0,600,0,325)
+    ScreenDrunk.AnchorPoint = Vector2.new(0.5,0.5)
+    ScreenDrunk.Position = UDim2.new(0,300,0,162.5)
+    ScreenDrunk.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    ScreenDrunk.BackgroundTransparency = 0.5
+    ScreenDrunk.Parent = MainFrame
+    ScreenDrunk.Visible = false
+    ScreenDrunk.Active = true
+    ScreenDrunk.ZIndex = 20050
+    createUICorner(ScreenDrunk)
+
+    -- Done/Cancel
+    local RGBDoneButtonFrame = Instance.new("Frame")
+    RGBDoneButtonFrame.Size = UDim2.new(0,100,0,35)
+    RGBDoneButtonFrame.AnchorPoint = Vector2.new(0.5,0.5)
+    RGBDoneButtonFrame.Position = UDim2.new(0,75,0,210)
+    RGBDoneButtonFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    RGBDoneButtonFrame.ZIndex = 30001
+    RGBDoneButtonFrame.Parent = containerRGB
+    createUICorner(RGBDoneButtonFrame)
+    createUIStroke(RGBDoneButtonFrame, 2, Color3.fromRGB(45,45,45))
+
+    local RGBDoneButton = Instance.new("TextButton")
+    RGBDoneButton.Size = UDim2.new(0,100,0,35)
+    RGBDoneButton.AnchorPoint = Vector2.new(0.5,0.5)
+    RGBDoneButton.Position = UDim2.new(0,50,0,17.5)
+    RGBDoneButton.BackgroundTransparency = 1
+    RGBDoneButton.Text = "Done"
+    RGBDoneButton.TextColor3 = Color3.fromRGB(255,255,255)
+    RGBDoneButton.Font = Enum.Font.SourceSansBold
+    RGBDoneButton.TextSize = 16
+    RGBDoneButton.ZIndex = 30002
+    RGBDoneButton.Parent = RGBDoneButtonFrame
+    createUICorner(RGBDoneButton)
+
+    local RGBCancelButtonFrame = Instance.new("Frame")
+    RGBCancelButtonFrame.Size = UDim2.new(0,100,0,35)
+    RGBCancelButtonFrame.AnchorPoint = Vector2.new(0.5,0.5)
+    RGBCancelButtonFrame.Position = UDim2.new(0,225,0,210)
+    RGBCancelButtonFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    RGBCancelButtonFrame.ZIndex = 30002
+    RGBCancelButtonFrame.Parent = containerRGB
+    createUICorner(RGBCancelButtonFrame)
+    createUIStroke(RGBCancelButtonFrame, 2, Color3.fromRGB(45,45,45))
+
+    local RGBCancelButton = Instance.new("TextButton")
+    RGBCancelButton.Size = UDim2.new(0,100,0,35)
+    RGBCancelButton.AnchorPoint = Vector2.new(0.5,0.5)
+    RGBCancelButton.Position = UDim2.new(0,50,0,17.5)
+    RGBCancelButton.BackgroundTransparency = 1
+    RGBCancelButton.Text = "Cancel"
+    RGBCancelButton.TextColor3 = Color3.fromRGB(255,255,255)
+    RGBCancelButton.Font = Enum.Font.SourceSansBold
+    RGBCancelButton.TextSize = 16
+    RGBCancelButton.ZIndex = 30002
+    RGBCancelButton.Parent = RGBCancelButtonFrame
+    createUICorner(RGBCancelButton)
+
+    -- knob maker
+    local function makeKnob(parent)
+        local k = Instance.new("Frame")
+        k.Size = UDim2.new(0,13,0,13)
+        k.AnchorPoint = Vector2.new(0.5,0.5)
+        k.Position = UDim2.new(0,0,0.5,0)
+        k.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        k.BackgroundTransparency = 0.4
+        k.BorderSizePixel = 0
+        k.ZIndex = parent.ZIndex + 1
+        k.Parent = parent
+        createUICorner(k, UDim.new(0,10))
+        createUIStroke(k, 2, Color3.fromRGB(0,0,0))
+        local inner = Instance.new("Frame")
+        inner.Size = UDim2.new(1, -4, 1, -4)
+        inner.Position = UDim2.new(0,2,0,2)
+        inner.BackgroundTransparency = 1
+        inner.BorderSizePixel = 0
+        inner.Parent = k
+        createUICorner(inner, UDim.new(0,10))
+        return k
+    end
+
+    local knobRGB = makeKnob(sliderBarRGB)
+    local knobBT = makeKnob(sliderBarBT)
+
+    -- current logical values
+    local h,s,v = color3ToHSV(defaultColor)
+    local current = {
+        color = defaultColor,
+        hue = h or 0,
+        saturation = s or 1,
+        value = v or 1,
+        alpha = 0
+    }
+
+    -- target values (for smooth display)
+    local target = { r=0, g=0, b=0, alpha = current.alpha }
+    local smooth = { r=0, g=0, b=0, alpha = current.alpha }
+
+    -- init rgb targets from default
+    do
+        local rr,gg,bb = color3ToRGBInts(current.color)
+        target.r, target.g, target.b = rr, gg, bb
+        smooth.r, smooth.g, smooth.b = rr, gg, bb
+    end
+
+    -- utility to set target from current.color
+    local function setTargetFromCurrentColor()
+        local rr,gg,bb = color3ToRGBInts(current.color)
+        target.r, target.g, target.b = rr, gg, bb
+    end
+
+    -- apply immediate (non-smooth) preview (used rarely)
+    local function applyImmediatePreview()
+        FrameBarRGB.BackgroundColor3 = current.color
+        FrameBarRGB.BackgroundTransparency = current.alpha
+        sliderBarBT.BackgroundColor3 = current.color
+        inputBoxR.Text = tostring((color3ToRGBInts(current.color)))
+    end
+
+    -- set up smooth updater (RenderStepped)
+    local SMOOTH = 0.18 -- lerp factor (0..1), ปรับได้
+    RunService:BindToRenderStep("ColorPickerSmooth_"..tostring(math.random()), Enum.RenderPriority.Camera.Value + 1, function()
+        -- smooth each rgb and alpha
+        smooth.r = smooth.r + (target.r - smooth.r) * SMOOTH
+        smooth.g = smooth.g + (target.g - smooth.g) * SMOOTH
+        smooth.b = smooth.b + (target.b - smooth.b) * SMOOTH
+        smooth.alpha = smooth.alpha + (target.alpha - smooth.alpha) * SMOOTH
+
+        -- apply to preview frames
+        local c = rgbIntsToColor3(smooth.r, smooth.g, smooth.b)
+        FrameBarRGB.BackgroundColor3 = c
+        FrameBarRGB.BackgroundTransparency = smooth.alpha
+        sliderBarBT.BackgroundColor3 = c
+
+        -- update input boxes text if not focused
+        if not inputBoxR:IsFocused() then inputBoxR.Text = tostring(math.floor(smooth.r+0.5)) end
+        if not inputBoxG:IsFocused() then inputBoxG.Text = tostring(math.floor(smooth.g+0.5)) end
+        if not inputBoxB:IsFocused() then inputBoxB.Text = tostring(math.floor(smooth.b+0.5)) end
+    end)
+
+    -- setHueRatio: update logical color from hue (keeps saturation/value)
+    local function setHueRatio(ratio)
+        ratio = math.clamp(ratio, 0, 1)
+        current.hue = ratio
+        current.color = Color3.fromHSV(current.hue, current.saturation, current.value)
+        -- update display target but do not modify knob range logic (knob controlled separately)
+        setTargetFromCurrentColor()
+    end
+
+    -- setAlphaRatio
+    local function setAlphaRatio(ratio)
+        ratio = math.clamp(ratio, 0, 1)
+        current.alpha = ratio
+        target.alpha = current.alpha
+    end
+
+    -- slider draggable factory returns control with setTarget to programmatically move knob smoothly
+    local function makeSliderDraggable(slider, knob, onChangeRatio)
+        local dragging = false
+        local dragInput = nil
+        local targetRatio = 0
+        local smoothRatio = 0
+        local sliderWidthCached = 0
+
+        -- update position based on input
+        local function updateFromInput(input)
+            if not slider or slider.Parent == nil then return end
+            local absPos = slider.AbsolutePosition
+            local absSize = slider.AbsoluteSize
+            sliderWidthCached = absSize.X
+            local x = 0
+            if input and input.Position then
+                x = input.Position.X - absPos.X
+            else
+                return
+            end
+            targetRatio = math.clamp(x / math.max(1, absSize.X), 0, 1)
+            if onChangeRatio then
+                onChangeRatio(targetRatio)
+            end
+        end
+
+        -- RenderStepped for knob smooth
+        local conn
+        conn = RunService.RenderStepped:Connect(function()
+            smoothRatio = smoothRatio + (targetRatio - smoothRatio) * 0.22
+            local width = slider.AbsoluteSize.X
+            knob.Position = UDim2.new(0, smoothRatio * math.max(1, width), 0.5, 0)
+        end)
+
+        knob.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragInput = input
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End and dragging then
+                        dragging = false
+                        dragInput = nil
+                    end
+                end)
+            end
+        end)
+
+        slider.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragInput = input
+                updateFromInput(input)
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.MouseMovement) then
+                updateFromInput(input)
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+
+        -- return control to allow programmatic set
+        return {
+            set = function(ratio)
+                targetRatio = math.clamp(ratio or 0, 0, 1)
+            end,
+            get = function() return targetRatio, smoothRatio end
+        }
+    end
+
+    -- init knobs controls (so we can set them programmatically)
+    local hueControl = makeSliderDraggable(sliderBarRGB, knobRGB, function(ratio)
+        -- when user moves hue knob: update logical hue -> update target color
+        setHueRatio(ratio)
+        -- update alpha slider's background color to reflect new chosen hue (target will be lerped)
+        target.alpha = target.alpha or current.alpha
+        setTargetFromCurrentColor()
+    end)
+
+    local alphaControl = makeSliderDraggable(sliderBarBT, knobBT, function(ratio)
+        setAlphaRatio(ratio)
+    end)
+
+    -- helper to set knobs to current hue/alpha (smoothly)
+    local function moveKnobsToCurrent()
+        if hueControl and hueControl.set then hueControl.set(current.hue) end
+        if alphaControl and alphaControl.set then alphaControl.set(current.alpha) end
+    end
+
+    -- input -> update current and target (typing)
+    local function updateFromInputs()
+        local r = safeParseInt(inputBoxR.Text)
+        local g = safeParseInt(inputBoxG.Text)
+        local b = safeParseInt(inputBoxB.Text)
+        if r and g and b then
+            r = math.clamp(r,0,255)
+            g = math.clamp(g,0,255)
+            b = math.clamp(b,0,255)
+
+            -- update logical color (this updates hue/s/v too)
+            current.color = rgbIntsToColor3(r,g,b)
+            local hh, ss, vv = color3ToHSV(current.color)
+            current.hue = hh
+            current.saturation = ss
+            current.value = vv
+
+            -- update display target (smooth preview) but DO NOT restrict knob range
+            target.r = r
+            target.g = g
+            target.b = b
+
+            -- ensure knobs reflect new logical hue/alpha (programmatically move them)
+            moveKnobsToCurrent()
+        end
+    end
+
+    inputBoxR.FocusLost:Connect(function() updateFromInputs() end)
+    inputBoxG.FocusLost:Connect(function() updateFromInputs() end)
+    inputBoxB.FocusLost:Connect(function() updateFromInputs() end)
+
+    -- Open / Close behaviour
+    btn.MouseButton1Click:Connect(function()
+        containerRGB.Visible = true
+        ScreenDrunk.Visible = true
+
+        TweenService:Create(mainBorder, TweenInfo.new(0.1, Enum.EasingStyle.Sine), {
+            Color = Color3.fromRGB(0,150,255)
+        }):Play()
+        task.delay(0.6, function()
+            TweenService:Create(mainBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {
+                Color = Color3.fromRGB(45,45,45)
+            }):Play()
+        end)
+
+        flashBorder.Enabled = true
+        flashBorder.Transparency = 0
+        TweenService:Create(flashBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {
+            Transparency = 1
+        }):Play()
+
+        -- move knobs to reflect current values when opening
+        moveKnobsToCurrent()
+    end)
+
+    RGBDoneButton.MouseButton1Click:Connect(function()
+        -- commit color to statusLight
+        statusLight.BackgroundColor3 = current.color
+        statusLight.BackgroundTransparency = current.alpha
+
+        -- close
+        containerRGB.Visible = false
+        ScreenDrunk.Visible = false
+    end)
+
+    RGBCancelButton.MouseButton1Click:Connect(function()
+        -- simply close without saving (statusLight stays as before)
+        containerRGB.Visible = false
+        ScreenDrunk.Visible = false
+        -- when closed, also reset target to statusLight color so preview returns to last saved
+        local rr,gg,bb = color3ToRGBInts(statusLight.BackgroundColor3)
+        target.r, target.g, target.b = rr, gg, bb
+        target.alpha = statusLight.BackgroundTransparency
+    end)
+
+-- initialization
+    setTargetFromCurrentColor()
+    target.alpha = current.alpha or 0
+    -- set input boxes initial text
+    if not inputBoxR:IsFocused() then inputBoxR.Text = tostring(target.r) end
+    if not inputBoxG:IsFocused() then inputBoxG.Text = tostring(target.g) end
+    if not inputBoxB:IsFocused() then inputBoxB.Text = tostring(target.b) end
+
+    -- ensure knob positions are initialized
+    moveKnobsToCurrent()
+
+return {
+    GetColor = function()
+        local r = math.floor(current.color.R * 255)
+        local g = math.floor(current.color.G * 255)
+        local b = math.floor(current.color.B * 255)
+        return r, g, b, current.alpha, current.color
+    end,
+
+    SetColor = function(newColor, newAlpha)
+        current.color = newColor or current.color
+        current.alpha = newAlpha or current.alpha
+
+        -- sync HSV
+        local h,s,v = color3ToHSV(current.color)
+        current.hue = h
+        current.saturation = s
+        current.value = v
+
+        -- update preview
+        applyColorToPreviews()
+
+        setKnobPositionFromRatio(sliderBarRGB, knobRGB, current.hue)
+        setKnobPositionFromRatio(FrameBarRGB, knobSV, current.saturation, current.value)
+        setKnobPositionFromRatio(FrameBarBT, knobBT, current.alpha)
+    end
+}
+end
+
+-- ==========================
+-- Function: ฟังก์ชัน สร้างแผงสำหรับปรับค่าแบบปรับค่าแบบเลื่อนได้
+-- ==========================
+
+local function createToggleSlider(parent, name, yPos, default, minValue, maxValue, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -50, 0, 35)
+    container.Position = UDim2.new(0, 25, 0, yPos)
+    container.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    container.Active = true
+    container.ZIndex = 20000
+    container.Parent = parent
+    createUICorner(container) 
+
+    -- ขอบจริง (เทา) อยู่ตลอด
+    local mainBorder = Instance.new("UIStroke")
+    mainBorder.Color = Color3.fromRGB(45, 45, 45)
+    mainBorder.Thickness = 2
+    mainBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    mainBorder.Parent = container
+
+    -- ขอบฟ้าเฉพาะตอนเลื่อน (fade-out)
+    local flashBorder = Instance.new("UIStroke")
+    flashBorder.Color = Color3.fromRGB(0, 150, 255)
+    flashBorder.Thickness = 2
+    flashBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    flashBorder.Enabled = true
+    flashBorder.Transparency = 1
+    flashBorder.Parent = container
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(0, 70, 0, 10)
+    nameLabel.Position = UDim2.new(0, 8, 0, 2)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.Font = Enum.Font.SourceSansBold
+    nameLabel.TextSize = 16
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.ZIndex = 20001
+    nameLabel.Parent = container
+
+    local sliderBar = Instance.new("Frame")
+    sliderBar.Size = UDim2.new(1, -16, 0, 14)
+    sliderBar.Position = UDim2.new(0, 8, 0, 18)
+    sliderBar.BackgroundColor3 = Color3.fromRGB(20, 40, 120)
+    sliderBar.BorderSizePixel = 0
+    sliderBar.ZIndex = 20001
+    sliderBar.Parent = container
+    createUICorner(sliderBar)
+
+    local fill = Instance.new("Frame")
+    local relDefault = (default - minValue) / (maxValue - minValue)
+    
+    local barWidth = sliderBar.AbsoluteSize.X
+    local px = barWidth * rel
+    
+    fill.Size = UDim2.fromOffset(
+    math.max(px, 1), -- แค่บังคับขั้นต่ำ
+    sliderBar.AbsoluteSize.Y
+)
+    
+    fill.Position = UDim2.new(0, 0, 0, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(150, 230, 250)
+    fill.BorderSizePixel = 0
+    fill.ZIndex = 20002
+    fill.Parent = sliderBar
+    createUICorner(fill)
+
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0, 50, 1, 0)
+    valueLabel.Position = UDim2.new(0, 8, 0, -1)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(default)
+    valueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    valueLabel.Font = Enum.Font.SourceSansBold
+    valueLabel.TextSize = 16
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+    valueLabel.ZIndex = 20003
+    valueLabel.Parent = sliderBar
+
+    local dragging = false
+    local targetValue = default
+    local smoothValue = default
+    local fadeTween -- เก็บ Tween ของขอบ
+
+    RunService.RenderStepped:Connect(function()
+    smoothValue = smoothValue + (targetValue - smoothValue) * 0.2
+    local rel = (smoothValue - minValue) / (maxValue - minValue)
+    fill.Size = UDim2.new(rel, 0, 1, 0)
+    valueLabel.Text = tostring(math.floor(smoothValue))
+    callback(math.floor(smoothValue))
+
+    if dragging or math.abs(targetValue - smoothValue) > 0.6 then
+        -- ยังเลื่อนอยู่
+        TweenService:Create(mainBorder, TweenInfo.new(0.1, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(0,150,255)}):Play()
+        if fadeTween then fadeTween:Cancel() end
+        flashBorder.Transparency = 0
+    else
+        -- หยุดเลื่อนแล้ว
+        fadeTween = TweenService:Create(flashBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {Transparency = 1})
+        fadeTween:Play()
+        TweenService:Create(mainBorder, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(45,45,45)}):Play()
+    end
+end)
+
+    local function updateTarget(inputPosX)
+        local barPosX = sliderBar.AbsolutePosition.X
+        local barWidth = sliderBar.AbsoluteSize.X
+        local relPos = math.clamp((inputPosX - barPosX) / barWidth, 0, 1)
+        targetValue = minValue + relPos * (maxValue - minValue)
+    end
+
+    sliderBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            updateTarget(input.Position.X)
+        end
+    end)
+
+    sliderBar.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateTarget(input.Position.X)
+        end
+    end)
+
+    sliderBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateTarget(input.Position.X)
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+-- ===================================================  
+-- Page: Player
+local contentFramePlayer = Instance.new("ScrollingFrame")
+contentFramePlayer.Size = UDim2.new(1, -180, 1, -37.8)
+contentFramePlayer.Position = UDim2.new(0, 180, 0, 37.8)
+contentFramePlayer.BackgroundTransparency = 1
+contentFramePlayer.ScrollBarThickness = 5
+contentFramePlayer.ScrollBarImageColor3 = Color3.fromRGB(120,120,120)
+contentFramePlayer.CanvasSize = UDim2.new(0, 0, 0, 133)
+contentFramePlayer.ScrollBarImageTransparency = 1
+contentFramePlayer.AutomaticCanvasSize = Enum.AutomaticSize.None
+contentFramePlayer.ZIndex = 20000
+contentFramePlayer.Visible = false
+contentFramePlayer.Active = true
+contentFramePlayer.Parent = MainFrame
+createUICorner(contentFramePlayer)
+createListLayout(contentFramePlayer, 10, 5)
+
+local PlayerPage = Instance.new("Frame")
+PlayerPage.Size = UDim2.new(1, 0, 1, 0)
+PlayerPage.BackgroundTransparency = 1
+PlayerPage.Active = true
+PlayerPage.Parent = contentFramePlayer
+createUICorner(PlayerPage)
+pages["Player"] = contentFramePlayer
+
+-- ==========================
+-- ปรับค่าเดิน/กระโดด
+-- Default & Max
+-- ==========================
+local defaultWalkSpeed = 16
+local defaultJumpPower = 50
+local maxValueWJ = 400
+
+local currentWalkSpeed = defaultWalkSpeed
+local currentJumpPower = defaultJumpPower
+
+-- Function: Apply WalkSpeed & JumpPower to Character
+local function applyStats()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+        if humanoid then
+            -- ใช้ pcall กัน error
+            pcall(function()
+                humanoid.WalkSpeed = currentWalkSpeed
+                humanoid.JumpPower = currentJumpPower
+            end)
+        end
+    end
+end
+
+-- Event: CharacterAdded
+player.CharacterAdded:Connect(function(char)
+    -- รอ Humanoid โผล่มา
+    local humanoid = char:WaitForChild("Humanoid", 5)
+    task.wait(0.001)
+    applyStats()
+end)
+
+-- Anti-Override Loop
+local RunService = game:GetService("RunService")
+RunService.RenderStepped:Connect(function()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+        if humanoid then
+            -- ตรวจสอบค่าก่อนเซ็ต
+            if humanoid.WalkSpeed ~= currentWalkSpeed then
+                pcall(function()
+                    humanoid.WalkSpeed = currentWalkSpeed
+                end)
+            end
+            if humanoid.JumpPower ~= currentJumpPower then
+                pcall(function()
+                    humanoid.JumpPower = currentJumpPower
+                end)
+            end
+        end
+    end
+end)
+
+-- ==========================
+-- Create Sliders
+-- ==========================
+createToggleSlider(PlayerPage, "Walk Speed", 3, defaultWalkSpeed, 0, maxValueWJ, function(value)
+    currentWalkSpeed = value
+    applyStats()
+end)
+
+createToggleSlider(PlayerPage, "Jump Power", 46, defaultJumpPower, 0, maxValueWJ, function(value)
+    currentJumpPower = value
+    applyStats()
+end)
+
+-- ==========================
+-- Page: PlayerPage
+-- ==========================
+local getFly = createToggle(PlayerPage, "FLY GUI", 89)
+
+local getInfiniteJump = createToggle(PlayerPage, "Infinite Jump", 132)
+
+local getNoClip = createToggle(PlayerPage, "NoClip", 175)
+
+local getShiftLock = createToggle(PlayerPage, "Shift Lock", 218)
+
+-- ==========================
+-- Fly Logic
+-- ==========================
+-- กรอบหลัก
+local Frame = Instance.new("Frame")
+Frame.Parent = ScreenGuiAll
+Frame.Active = true
+Frame.Visible = false
+Frame.Size = UDim2.new(0, 220, 0, 115)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.ZIndex = 500
+createUICorner(Frame) 
+createUIStroke(Frame)
+DraggingGUI(Frame) -- เรียกใช้งาน Drag function
+
+-- Center Frame
+local function centerFrameFLY()
+local viewportSize = camera and camera.ViewportSize or Vector2.new(1280, 720)
+Frame.Position = UDim2.new(
+0, (viewportSize.X - Frame.AbsoluteSize.X) / 2,
+0, (viewportSize.Y - Frame.AbsoluteSize.Y) / 100
+)
+end
+
+centerFrameFLY()
+
+-- Center ทั้งคู่เมื่อขนาดจอเปลี่ยน
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+centerFrameFLY()
+end)
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Parent = Frame
+Title.Size = UDim2.new(1, -10, 0, 25)
+Title.Position = UDim2.new(0, 10, 0, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "FLY GUI (Not every game.)"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- เส้นแบ่ง
+local separator = Instance.new("Frame")
+separator.Size = UDim2.new(1, 0, 0, 2)
+separator.Position = UDim2.new(0, 0, 0, 30)
+separator.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+separator.BorderSizePixel = 0
+separator.Parent = Frame
+
+-- ปุ่ม UP
+local up = Instance.new("TextButton")
+up.Parent = Frame
+up.Size = UDim2.new(0, 60, 0, 30)
+up.Position = UDim2.new(0.05, 0, 0.35, 0)
+up.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+up.Text = "UP"
+up.TextColor3 = Color3.fromRGB(255, 255, 255)
+up.Font = Enum.Font.SourceSansBold
+up.TextSize = 16
+createUICorner(up)
+
+-- ปุ่ม DOWN
+local down = Instance.new("TextButton")
+down.Parent = Frame
+down.Size = UDim2.new(0, 60, 0, 30)
+down.Position = UDim2.new(0.05, 0, 0.70, 0)
+down.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+down.Text = "DOWN"
+down.TextColor3 = Color3.fromRGB(255, 255, 255)
+down.Font = Enum.Font.SourceSansBold
+down.TextSize = 16
+createUICorner(down)
+
+-- ปุ่ม + Speed
+local plus = Instance.new("TextButton")
+plus.Parent = Frame
+plus.Size = UDim2.new(0, 60, 0, 30)
+plus.Position = UDim2.new(0.35, 0, 0.35, 0)
+plus.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+plus.Text = "+"
+plus.TextColor3 = Color3.fromRGB(255, 255, 255)
+plus.Font = Enum.Font.SourceSansBold
+plus.TextSize = 16
+createUICorner(plus)
+
+-- ปุ่ม - Speed
+local mine = Instance.new("TextButton")
+mine.Parent = Frame
+mine.Size = UDim2.new(0, 60, 0, 30)
+mine.Position = UDim2.new(0.35, 0, 0.70, 0)
+mine.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mine.Text = "–"
+mine.TextColor3 = Color3.fromRGB(255, 255, 255)
+mine.Font = Enum.Font.SourceSansBold
+mine.TextSize = 16
+createUICorner(mine)
+
+-- ช่อง Speed แสดงค่า
+local speed = Instance.new("TextLabel")
+speed.Parent = Frame
+speed.Size = UDim2.new(0, 60, 0, 30)
+speed.Position = UDim2.new(0.65, 0, 0.35, 0)
+speed.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+speed.Text = "1"
+speed.TextColor3 = Color3.fromRGB(255, 255, 255)
+speed.Font = Enum.Font.SourceSansBold
+speed.TextSize = 16
+speed.TextWrapped = true
+createUICorner(speed)
+
+-- ปุ่ม Fly Toggle
+local onof = Instance.new("TextButton")
+onof.Parent = Frame
+onof.Size = UDim2.new(0, 60, 0, 30)
+onof.Position = UDim2.new(0.65, 0, 0.70, 0)
+onof.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+onof.Text = "Fly"
+onof.TextColor3 = Color3.fromRGB(255, 255, 255)
+onof.Font = Enum.Font.SourceSansBold
+onof.TextSize = 16
+createUICorner(onof)
+
+speeds = 1
+
+local speaker = game:GetService("Players").LocalPlayer
+
+local chr = game.Players.LocalPlayer.Character
+local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+
+nowe = false
+
+Duration = 5;
+
+onof.MouseButton1Down:connect(function()
+
+	if nowe == true then
+		nowe = false
+
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,true)
+		speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+	else 
+		nowe = true
+
+
+
+		for i = 1, speeds do
+			spawn(function()
+
+				local hb = game:GetService("RunService").Heartbeat	
+
+
+				tpwalking = true
+				local chr = game.Players.LocalPlayer.Character
+				local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+				while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+					if hum.MoveDirection.Magnitude > 0 then
+						chr:TranslateBy(hum.MoveDirection)
+					end
+				end
+
+			end)
+		end
+		game.Players.LocalPlayer.Character.Animate.Disabled = true
+		local Char = game.Players.LocalPlayer.Character
+		local Hum = Char:FindFirstChildOfClass("Humanoid") or Char:FindFirstChildOfClass("AnimationController")
+
+		for i,v in next, Hum:GetPlayingAnimationTracks() do
+			v:AdjustSpeed(0)
+		end
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,false)
+		speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+	end
+
+
+
+
+	if game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6 then
+
+
+
+		local plr = game.Players.LocalPlayer
+		local torso = plr.Character.Torso
+		local flying = true
+		local deb = true
+		local ctrl = {f = 0, b = 0, l = 0, r = 0}
+		local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		local maxspeed = 9e9
+		local speed = 0
+
+
+		local bg = Instance.new("BodyGyro", torso)
+		bg.P = 9e4
+		bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+		bg.cframe = torso.CFrame
+		local bv = Instance.new("BodyVelocity", torso)
+		bv.velocity = Vector3.new(0,0.1,0)
+		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+		if nowe == true then
+			plr.Character.Humanoid.PlatformStand = true
+		end
+		while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+			game:GetService("RunService").RenderStepped:Wait()
+
+			if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+				speed = speed+.5+(speed/maxspeed)
+				if speed > maxspeed then
+					speed = maxspeed
+				end
+			elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+				speed = speed-1
+				if speed < 0 then
+					speed = 0
+				end
+			end
+			if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+				lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+			elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+			else
+				bv.velocity = Vector3.new(0,0,0)
+			end
+			--	game.Players.LocalPlayer.Character.Animate.Disabled = true
+			bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+		end
+		ctrl = {f = 0, b = 0, l = 0, r = 0}
+		lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		speed = 0
+		bg:Destroy()
+		bv:Destroy()
+		plr.Character.Humanoid.PlatformStand = false
+		game.Players.LocalPlayer.Character.Animate.Disabled = false
+		tpwalking = false
+
+
+
+
+	else
+		local plr = game.Players.LocalPlayer
+		local UpperTorso = plr.Character.UpperTorso
+		local flying = true
+		local deb = true
+		local ctrl = {f = 0, b = 0, l = 0, r = 0}
+		local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		local maxspeed = 9e9
+		local speed = 0
+
+
+		local bg = Instance.new("BodyGyro", UpperTorso)
+		bg.P = 9e4
+		bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+		bg.cframe = UpperTorso.CFrame
+		local bv = Instance.new("BodyVelocity", UpperTorso)
+		bv.velocity = Vector3.new(0,0.1,0)
+		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+		if nowe == true then
+			plr.Character.Humanoid.PlatformStand = true
+		end
+		while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+			wait()
+
+			if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+				speed = speed+.5+(speed/maxspeed)
+				if speed > maxspeed then
+					speed = maxspeed
+				end
+			elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+				speed = speed-1
+				if speed < 0 then
+					speed = 0
+				end
+			end
+			if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+				lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+			elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+			else
+				bv.velocity = Vector3.new(0,0,0)
+			end
+
+			bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+		end
+		ctrl = {f = 0, b = 0, l = 0, r = 0}
+		lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		speed = 0
+		bg:Destroy()
+		bv:Destroy()
+		plr.Character.Humanoid.PlatformStand = false
+		game.Players.LocalPlayer.Character.Animate.Disabled = false
+		tpwalking = false
+		
+	end
+
+end)
+
+local tis
+
+up.MouseButton1Down:connect(function()
+	tis = up.MouseEnter:connect(function()
+		while tis do
+			wait()
+			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,1,0)
+		end
+	end)
+end)
+
+up.MouseLeave:connect(function()
+	if tis then
+		tis:Disconnect()
+		tis = nil
+	end
+end)
+
+local dis
+
+down.MouseButton1Down:connect(function()
+	dis = down.MouseEnter:connect(function()
+		while dis do
+			wait()
+			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,-1,0)
+		end
+	end)
+end)
+
+down.MouseLeave:connect(function()
+	if dis then
+		dis:Disconnect()
+		dis = nil
+	end
+end)
+
+
+game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
+	wait(0.7)
+	game.Players.LocalPlayer.Character.Humanoid.PlatformStand = false
+	game.Players.LocalPlayer.Character.Animate.Disabled = false
+
+end)
+
+
+plus.MouseButton1Down:connect(function()
+	speeds = speeds + 1
+	speed.Text = speeds
+	if nowe == true then
+
+
+		tpwalking = false
+		for i = 1, speeds do
+			spawn(function()
+
+				local hb = game:GetService("RunService").Heartbeat	
+
+
+				tpwalking = true
+				local chr = game.Players.LocalPlayer.Character
+				local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+				while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+					if hum.MoveDirection.Magnitude > 0 then
+						chr:TranslateBy(hum.MoveDirection)
+					end
+				end
+
+			end)
+		end
+	end
+end)
+mine.MouseButton1Down:connect(function()
+	if speeds == 1 then
+		speed.Text = 'cannot be less than 1'
+		wait(1)
+		speed.Text = speeds
+	else
+		speeds = speeds - 1
+		speed.Text = speeds
+		if nowe == true then
+			tpwalking = false
+			for i = 1, speeds do
+				spawn(function()
+
+					local hb = game:GetService("RunService").Heartbeat	
+
+
+					tpwalking = true
+					local chr = game.Players.LocalPlayer.Character
+					local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+					while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+						if hum.MoveDirection.Magnitude > 0 then
+							chr:TranslateBy(hum.MoveDirection)
+						end
+					end
+
+				end)
+			end
+		end
+	end
+end)
+
+-- ==========================
+-- เปิด/ปิด GUI ด้วย getFly()
+-- ==========================
+RunService.RenderStepped:Connect(function()
+    local enabled = getFly()
+    if Frame.Visible ~= enabled then
+        Frame.Visible = enabled
+    end
+end)
+
+-- ==========================
+-- Infinite Jump Logic (PC & Mobile)
+-- ==========================
+-- ฟังก์ชันดึง Humanoid ปัจจุบัน (ไม่เก็บ reference)
+local function getHumanoid()
+    local character = player.Character
+    if character then
+        return character:FindFirstChildWhichIsA("Humanoid")
+    end
+    return nil
+end
+
+-- Infinite Jump Logic
+UIS.JumpRequest:Connect(function()
+    if getInfiniteJump() then
+        local humanoid = getHumanoid()
+        if humanoid then
+            pcall(function()
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end)
+        end
+    end
+end)
+
+-- ==========================
+-- NoClip Logic (เปิด-ปิดชนกลับ) | คงสถานะหลังตาย
+-- ==========================
+local originalCollision = {}
+local currentCharacter = nil
+
+-- ฟังก์ชันสำหรับเปิด/ปิดการชน
+local function updateCollision()
+	local character = currentCharacter
+	if not character then return end
+
+	if getNoClip() then
+		-- เปิดโหมด NoClip
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				if originalCollision[part] == nil then
+					originalCollision[part] = part.CanCollide
+				end
+				part.CanCollide = false
+			end
+		end
+	else
+		-- ปิดโหมด NoClip
+		for part, oldValue in pairs(originalCollision) do
+			if part and part.Parent then
+				part.CanCollide = oldValue
+			end
+		end
+		table.clear(originalCollision)
+	end
+end
+
+-- อัปเดตทุกเฟรม
+RunService.Heartbeat:Connect(updateCollision)
+
+-- ตรวจจับเมื่อผู้เล่นเกิดใหม่
+player.CharacterAdded:Connect(function(char)
+	currentCharacter = char
+	table.clear(originalCollision) -- ล้างของเก่า (ตัวละครเก่า)
+	task.wait(0.001) -- รอโหลดชิ้นส่วนของตัวละครใหม่
+	updateCollision() -- คืนค่าโหมด NoClip ให้ตรงกับสถานะก่อนตาย
+end)
+
+-- ตรวจจับตอนเริ่มต้น (หากตัวละครมีอยู่แล้ว)
+if player.Character then
+	currentCharacter = player.Character
+	updateCollision()
+end
+
+-- ==========================
+-- ShiftLock Logic
+-- ==========================
+local shiftLockEnabled = false
+local humanoid, root
+
+-- ฟังก์ชันอัปเดต humanoid/root
+local function updateCharacter()
+    local character = player.Character
+    if character then
+        humanoid = character:WaitForChild("Humanoid")
+        root = character:WaitForChild("HumanoidRootPart")
+    end
+end
+
+updateCharacter()
+player.CharacterAdded:Connect(updateCharacter)
+
+-- ฟังก์ชันเปิด/ปิด ShiftLock
+local function setShiftLock(state)
+    shiftLockEnabled = state
+    if shiftLockEnabled then
+        if humanoid then
+            camera.CameraSubject = humanoid
+            camera.CameraType = Enum.CameraType.Custom
+        end
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    else
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    end
+end
+
+-- RenderStepped: ตรวจสอบ GUI toggle
+RunService.RenderStepped:Connect(function()
+    if humanoid and root then
+        if getShiftLock() then
+            if not shiftLockEnabled then
+                setShiftLock(true)
+            end
+            -- หมุนตัวละครตามกล้อง
+            local lookVector = camera.CFrame.LookVector
+            local flatLook = Vector3.new(lookVector.X, 0, lookVector.Z)
+            if flatLook.Magnitude > 0 then
+                root.CFrame = CFrame.new(root.Position, root.Position + flatLook)
+            end
+        else
+            if shiftLockEnabled then
+                setShiftLock(false)
+            end
+        end
+    end
+end)
+
+-- ===================================================  
+-- Page: Visual
+local contentFrameVisual = Instance.new("ScrollingFrame")
+contentFrameVisual.Size = UDim2.new(1, -180, 1, -37.8)
+contentFrameVisual.Position = UDim2.new(0, 180, 0, 37.8)
+contentFrameVisual.BackgroundTransparency = 1
+contentFrameVisual.ScrollBarThickness = 5
+contentFrameVisual.ScrollBarImageColor3 = Color3.fromRGB(120,120,120)
+contentFrameVisual.CanvasSize = UDim2.new(0, 0, 0, 472)
+contentFrameVisual.ScrollBarImageTransparency = 1
+contentFrameVisual.AutomaticCanvasSize = Enum.AutomaticSize.None
+contentFrameVisual.ZIndex = 20000
+contentFrameVisual.Visible = false
+contentFrameVisual.Active = true
+contentFrameVisual.Parent = MainFrame
+createUICorner(contentFrameVisual)
+createListLayout(contentFrameVisual, 10, 5)
+
+local VisualPage = Instance.new("Frame")
+VisualPage.Size = UDim2.new(1, 0, 1, 0)
+VisualPage.BackgroundTransparency = 1
+VisualPage.Active = true
+VisualPage.Parent = contentFrameVisual
+createUICorner(VisualPage)
+pages["Visual"] = contentFrameVisual
+
+-- ตัวแปรเป้าหมาย
+local targetExposure = 0
+local targetFOV = 70
+
+-- ฟังก์ชันปรับค่าแสง
+local function applyExposure()
+	if Lighting.ExposureCompensation ~= targetExposure then
+		Lighting.ExposureCompensation = targetExposure
+	end
+end
+
+-- ฟังก์ชันปรับค่า FOV
+local function applyFOV()
+	if Camera.FieldOfView ~= targetFOV then
+		Camera.FieldOfView = targetFOV
+	end
+end
+
+-- RenderStepped (ป้องกันรีเซ็ต)
+RunService.RenderStepped:Connect(function()
+	applyExposure()
+	applyFOV()
+end)
+
+-- รีเซ็ตหลังเกิดใหม่
+player.CharacterAdded:Connect(function()
+	applyExposure()
+	applyFOV()
+end)
+
+-- ==========================
+-- Create Sliders
+-- ==========================
+
+-- สไลเดอร์ Fullbright
+createToggleSlider(VisualPage, "Fullbright", 3, targetExposure, -10, 20, function(value)
+	targetExposure = value
+	applyExposure()
+end)
+
+-- สไลเดอร์ FOV
+createToggleSlider(VisualPage, "FOV Camera", 46, targetFOV, 0, 100, function(value)
+	targetFOV = value
+	applyFOV()
+end)
+
+-- ==========================
+-- Page: VisualPage
+-- ==========================
+local getRemovefog = createToggle(VisualPage, "Remove fog", 89)
+
+local getGrayscaleMode = createToggle(VisualPage, "Grayscale Mode", 132)
+
+local getESPPlayer = createToggle(VisualPage, "ESP Player", 175)
+
+local getXray = createToggle(VisualPage, "X-ray", 218)
+
+local getFPS = createToggle(VisualPage, "FPS GUI", 261)
+
+local getInfiniteZoom = createToggle(VisualPage, "Infinite Zoom", 304)
+
+local getblackscreen = createToggle(VisualPage, "Black Screen", 347)
+
+local getWhitescreen = createToggle(VisualPage, "white Screen", 390)
+
+-- ==========================
+-- Remove fog Logic (สูงสุด)
+-- ==========================
+local originalFogStart = nil
+local originalFogEnd = nil
+
+RunService.RenderStepped:Connect(function()
+    local lighting = game:GetService("Lighting")
+    
+    if getRemovefog() then
+        -- บันทึกค่าหมอกเดิม
+        if originalFogStart == nil then originalFogStart = lighting.FogStart end
+        if originalFogEnd == nil then originalFogEnd = lighting.FogEnd end
+        
+        -- ตั้งค่าหมอกสูงสุด → แทบไม่เห็น
+        lighting.FogStart = math.huge
+        lighting.FogEnd = math.huge
+    else
+        -- คืนค่าหมอกเดิม
+        if originalFogStart and originalFogEnd then
+            lighting.FogStart = originalFogStart
+            lighting.FogEnd = originalFogEnd
+        end
+    end
+end)
+
+-- ==========================
+-- GRAYSCALE MODE (ขาวดำ)
+-- ==========================
+-- ตัวแปรเก็บเอฟเฟกต์
+local grayscaleEffect = nil
+local created = false
+
+-- ตรวจสอบทุกเฟรม
+RunService.RenderStepped:Connect(function()
+    if getGrayscaleMode() then
+        -- ถ้ายังไม่สร้าง effect ให้สร้าง
+        if not created then
+            -- ถ้ามีอยู่แล้วให้ลบก่อน
+            if Lighting:FindFirstChild("ERC.Grayscale.Mode") then
+                Lighting:FindFirstChild("ERC.Grayscale.Mode"):Destroy()
+            end
+
+            grayscaleEffect = Instance.new("ColorCorrectionEffect")
+            grayscaleEffect.Name = "ERC.Grayscale.Mode"
+            grayscaleEffect.Saturation = -1   -- ขาวดำ
+            grayscaleEffect.Contrast = 0.05   -- เพิ่มคอนทราสต์นิดหน่อย
+            grayscaleEffect.Brightness = 0    -- ไม่เปลี่ยนความสว่าง
+            grayscaleEffect.Parent = Lighting
+
+            created = true
+        end
+    else
+        -- ถ้าปิด toggle ให้ลบ effect ออก
+        if created and grayscaleEffect then
+            grayscaleEffect:Destroy()
+            grayscaleEffect = nil
+            created = false
+        end
+    end
+end)
+
+-- ==========================
+-- ESP Player Logic
+-- ==========================
+local ESPs = {}
+local Highlights = {}
+
+-- ฟังก์ชันสร้าง ESP และ Highlight
+local function createESP(targetPlayer)
+    if not targetPlayer.Character then return end
+    local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart") or targetPlayer.Character:FindFirstChild("Torso")
+    if not hrp then return end
+
+    -- ESP Text
+    if not (ESPs[targetPlayer] and ESPs[targetPlayer].Parent and ESPs[targetPlayer].Parent.Parent == targetPlayer.Character) then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ERC.ESP.Name.Player"
+        billboard.Adornee = hrp
+        billboard.Size = UDim2.new(0, 100, 0, 50)
+        billboard.StudsOffset = Vector3.new(0, -3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = targetPlayer.Character
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1,0,1,0)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.fromRGB(255, 255 ,255)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextScaled = false
+        label.TextSize = 20
+        label.TextStrokeTransparency = 0
+        label.TextTransparency = 0
+        label.Parent = billboard
+
+        ESPs[targetPlayer] = label
+    end
+
+    -- ทำลาย Highlight เก่าถ้ามี
+    if Highlights[targetPlayer] and Highlights[targetPlayer].Parent then
+        Highlights[targetPlayer]:Destroy()
+        Highlights[targetPlayer] = nil
+    end
+
+    -- Highlight ตัวผู้เล่น
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ERC.ESP.Highlight.Player"
+    highlight.Adornee = targetPlayer.Character
+    highlight.FillColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.2
+    highlight.OutlineColor = Color3.fromRGB(0, 150, 255)
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = targetPlayer.Character
+    Highlights[targetPlayer] = highlight
+end
+
+-- ฟังก์ชันอัพเดท ESP
+local function updateESP()
+    local localChar = LocalPlayer.Character
+    if not localChar then return end
+
+    local localHRP = localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso")
+    if not localHRP then return end
+
+    local toggle = getESPPlayer() -- ค่าเปิด/ปิด ESP
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            createESP(player)
+
+            -- อัพเดทข้อความ
+            if ESPs[player] and player.Character then
+                local hrp = player.Character:FindFirstChild("HumanoidRootPart") or player.Character:FindFirstChild("Torso")
+                if hrp then
+                    local distance = (hrp.Position - localHRP.Position).Magnitude
+                    ESPs[player].Text = string.format("[ %s | %.1f m ]", player.Name, distance)
+                    ESPs[player].TextSize = 16
+                    ESPs[player].Visible = toggle
+                end
+            end
+
+            -- เปิด/ปิด Highlight ตาม toggle
+            if Highlights[player] then
+                Highlights[player].Enabled = toggle
+            end
+        end
+    end
+end
+
+-- อัพเดทตลอดเวลา
+RunService.RenderStepped:Connect(updateESP)
+
+-- ลบ ESP และ Highlight เมื่อผู้เล่นออก
+Players.PlayerRemoving:Connect(function(player)
+    if ESPs[player] and ESPs[player].Parent then
+        ESPs[player].Parent:Destroy()
+    end
+    ESPs[player] = nil
+
+    if Highlights[player] and Highlights[player].Parent then
+        Highlights[player].Parent:Destroy()
+    end
+    Highlights[player] = nil
+end)
+
+-- สร้าง ESP ใหม่เมื่อผู้เล่น spawn
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
+end)
+
+-- รีสร้าง ESP ของทุกคนเมื่อเรา respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer then
+            createESP(v)
+        end
+    end
+end)
+
+-- ==========================
+-- X-RAY SYSTEM (Optimized)
+-- ==========================
+-- โฟลเดอร์สำหรับเก็บ Highlight
+local XrayFolder = Instance.new("Folder")
+XrayFolder.Name = "ERC.Xray.Highlights"
+XrayFolder.Parent = Workspace
+
+-- ค่าพื้นฐาน
+local xrayEnabled = false
+local transparencyLevel = 0.65 -- 0 = ทึบ, 1 = หายหมด
+
+-- ฟังก์ชันช่วยเหลือ
+local function applyTransparency(obj)
+	if obj:IsA("BasePart") and obj.Transparency < 1 then
+		-- ตรวจสอบไม่ใช่ตัวผู้เล่น
+		if not LocalPlayer.Character or not obj:IsDescendantOf(LocalPlayer.Character) then
+			obj.LocalTransparencyModifier = transparencyLevel
+		end
+	end
+end
+
+local function resetTransparency(obj)
+	if obj:IsA("BasePart") then
+		obj.LocalTransparencyModifier = 0
+	end
+end
+
+local function addHighlightForModel(model)
+	if model:IsA("Model") and model:FindFirstChildWhichIsA("BasePart") then
+		if not XrayFolder:FindFirstChild(model.Name) then
+			local highlight = Instance.new("Highlight")
+			highlight.Name = model.Name
+			highlight.Adornee = model
+			highlight.FillTransparency = 1
+			highlight.OutlineTransparency = 0
+			highlight.OutlineColor = Color3.fromRGB(0, 150, 255)
+			highlight.Parent = XrayFolder
+		end
+	end
+end
+
+local function clearHighlights()
+	for _, v in pairs(XrayFolder:GetChildren()) do
+		v:Destroy()
+	end
+end
+
+-- ฟังก์ชัน Toggle
+local function toggleXray(on)
+	xrayEnabled = on
+	if on then
+		-- เปิด: ทำให้ object ทุกตัวยกเว้นผู้เล่นโปร่งใส
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			applyTransparency(obj)
+			addHighlightForModel(obj)
+		end
+	else
+		-- ปิด: คืนค่าปกติและลบ highlight
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			resetTransparency(obj)
+		end
+		clearHighlights()
+	end
+end
+
+-- ตรวจจับ object ใหม่
+Workspace.DescendantAdded:Connect(function(obj)
+	if xrayEnabled then
+		applyTransparency(obj)
+		addHighlightForModel(obj)
+	end
+end)
+
+-- RenderStepped อัปเดตเฉพาะตอนเปิด
+RunService.RenderStepped:Connect(function()
+	if xrayEnabled then
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("BasePart") and obj.LocalTransparencyModifier ~= transparencyLevel then
+				if not LocalPlayer.Character or not obj:IsDescendantOf(LocalPlayer.Character) then
+					obj.LocalTransparencyModifier = transparencyLevel
+				end
+			end
+		end
+	end
+end)
+
+-- อัปเดต toggle ตามค่าจริง
+RunService.RenderStepped:Connect(function()
+	local state = getXray()
+	if state ~= xrayEnabled then
+		toggleXray(state)
+	end
+end)
+
+-- ==========================
+-- FPS Logic
+-- ==========================
+-- กรอบหลัก
+local FrameFPS = Instance.new("Frame")
+FrameFPS.Parent = ScreenGuiAll
+FrameFPS.Active = true
+FrameFPS.Visible = false
+FrameFPS.Size = UDim2.new(0, 150, 0, 35)
+FrameFPS.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+FrameFPS.ZIndex = 500
+createUICorner(FrameFPS) 
+createUIStroke(FrameFPS)
+DraggingGUI(FrameFPS)
+
+-- ===================================================
+-- Center FrameFPS
+local function centerFrameFPS()
+local viewportSize = camera and camera.ViewportSize or Vector2.new(1280, 720)
+FrameFPS.Position = UDim2.new(
+0, (viewportSize.X - FrameFPS.AbsoluteSize.X) / 2,
+0, (viewportSize.Y - FrameFPS.AbsoluteSize.Y) / 100
+)
+end
+
+centerFrameFPS()
+
+-- ===================================================
+-- Center ทั้งคู่เมื่อขนาดจอเปลี่ยน
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+centerFrameFPS()
+end)
+
+-- ===================================================
+-- iconTextFPS
+local iconTextFPS = Instance.new("TextButton")
+iconTextFPS.Size = UDim2.new(0, 100, 0, 35)
+iconTextFPS.Position = UDim2.new(0, 0, 0, 0)
+iconTextFPS.BackgroundTransparency = 1
+iconTextFPS.ZIndex = 600
+iconTextFPS.Text = "  FPS : -"
+iconTextFPS.TextColor3 = Color3.fromRGB(255, 255, 255)
+iconTextFPS.TextXAlignment = Enum.TextXAlignment.Left
+iconTextFPS.Font = Enum.Font.SourceSansBold
+iconTextFPS.TextSize = 20
+iconTextFPS.Parent = FrameFPS
+createUICorner(iconTextFPS)
+
+-- เส้นขั้น |
+local sidebarDividerFPS = Instance.new("Frame")  
+sidebarDividerFPS.Size = UDim2.new(0, 2, 1, 0)  
+sidebarDividerFPS.Position = UDim2.new(0,  100, 0, 0)  
+sidebarDividerFPS.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+sidebarDividerFPS.BorderSizePixel = 0  
+sidebarDividerFPS.ZIndex = 600
+sidebarDividerFPS.Parent = FrameFPS
+
+-- ===================================================
+-- คำนวณ FPS
+local lastTime = tick()
+local fps = 0
+RunService.RenderStepped:Connect(function()
+	local now = tick()
+	fps = math.floor(1 / math.max(now - lastTime, 0.0001))
+	lastTime = now
+end)
+
+-- ===================================================
+-- อัปเดตค่า FPS ไปยัง Text ทุก ๆ 0.5 วินาที
+task.spawn(function()
+	while task.wait(0.5) do
+		if FrameFPS.Visible then
+			iconTextFPS.Text = "  FPS : " .. tostring(fps)
+		end
+	end
+end)
+
+-- ==========================
+-- เปิด/ปิด GUI ด้วย getFPS()
+-- ==========================
+RunService.RenderStepped:Connect(function()
+	local enabled = getFPS()
+	if FrameFPS.Visible ~= enabled then
+		FrameFPS.Visible = enabled
+	end
+end)
+
+-- ==========================
+-- Infinite Zoom Logic
+-- ==========================
+-- เก็บค่าระยะซูมเดิม
+local originalMinZoom = nil
+local originalMaxZoom = nil
+
+RunService.RenderStepped:Connect(function()
+    local player = Players.LocalPlayer
+    if not player then return end
+
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+
+    -- ตรวจสอบสถานะ Infinite Zoom
+    if getInfiniteZoom() then
+        -- เก็บค่าซูมเดิม (ครั้งแรกเท่านั้น)
+        if not originalMinZoom then
+            originalMinZoom = player.CameraMinZoomDistance
+        end
+        if not originalMaxZoom then
+            originalMaxZoom = player.CameraMaxZoomDistance
+        end
+
+        -- ตั้งค่าระยะซูมให้ "ไกลสุดแบบไม่จำกัด"
+        player.CameraMaxZoomDistance = math.huge
+        player.CameraMinZoomDistance = 0.5  -- ซูมใกล้สุดตามปกติ
+    else
+        -- คืนค่าซูมเดิม (ถ้ามี)
+        if originalMinZoom and originalMaxZoom then
+            player.CameraMinZoomDistance = originalMinZoom
+            player.CameraMaxZoomDistance = originalMaxZoom
+        end
+    end
+end)
+
+
+-- ==========================
+-- black Screen & White Screen Logic
+-- ==========================
+-- GUI หลักสำหรับหน้าจอคลุม
+local ScreenGuiBW = Instance.new("ScreenGui")
+ScreenGuiBW.Name = "ERC.GUI.ScreenGui.Black.White"
+ScreenGuiBW.IgnoreGuiInset = true
+ScreenGuiBW.ScreenInsets = Enum.ScreenInsets.None
+ScreenGuiBW.DisplayOrder = 2147483600
+ScreenGuiBW.ResetOnSpawn = false
+
+-- ทำให้แสดงผลอยู่เหนือ Executor บางตัว
+if type(gethui) == "function" then
+	ScreenGuiBW.Parent = gethui()
+elseif syn and type(syn.protect_gui) == "function" then
+	syn.protect_gui(ScreenGuiBW)
+	ScreenGuiBW.Parent = CoreGui
+elseif CoreGui:FindFirstChild("RobloxGui") then
+	ScreenGuiBW.Parent = CoreGui:FindFirstChild("RobloxGui")
+else
+	ScreenGuiBW.Parent = CoreGui
+end
+
+-- Frame สำหรับ Black screen
+local blackFrame = Instance.new("Frame")
+blackFrame.Size = UDim2.fromScale(1, 1)
+blackFrame.Position = UDim2.fromScale(0, 0)
+blackFrame.BorderSizePixel = 0
+blackFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- สีดำ
+blackFrame.Visible = false
+blackFrame.Active = true
+blackFrame.ZIndex = 200
+blackFrame.Parent = ScreenGuiBW
+
+-- Frame สำหรับ White screen
+local whiteFrame = Instance.new("Frame")
+whiteFrame.Size = UDim2.fromScale(1, 1)
+whiteFrame.Position = UDim2.fromScale(0, 0)
+whiteFrame.BorderSizePixel = 0
+whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1) -- สีขาว
+whiteFrame.Visible = false
+whiteFrame.Active = true
+whiteFrame.ZIndex = 200
+whiteFrame.Parent = ScreenGuiBW
+
+-- ==========================
+-- black screen Logic
+-- ==========================
+RunService.RenderStepped:Connect(function()
+	local enabled = getblackscreen()
+	if blackFrame.Visible ~= enabled then
+		blackFrame.Visible = enabled
+	end
+end)
+
+-- ==========================
+-- White screen Logic
+-- ==========================
+RunService.RenderStepped:Connect(function()
+	local enabled = getWhitescreen()
+	if whiteFrame.Visible ~= enabled then
+		whiteFrame.Visible = enabled
+	end
+end)
+
+-- ===================================================  
+-- Page: Function
+local contentFrameFunction = Instance.new("ScrollingFrame")
+contentFrameFunction.Size = UDim2.new(1, -180, 1, -37.8)
+contentFrameFunction.Position = UDim2.new(0, 180, 0, 37.8)
+contentFrameFunction.BackgroundTransparency = 1
+contentFrameFunction.ScrollBarThickness = 5
+contentFrameFunction.ScrollBarImageColor3 = Color3.fromRGB(120,120,120)
+contentFrameFunction.CanvasSize = UDim2.new(0, 0, 0, 438)
+contentFrameFunction.ScrollBarImageTransparency = 1
+contentFrameFunction.AutomaticCanvasSize = Enum.AutomaticSize.None
+contentFrameFunction.ZIndex = 20000
+contentFrameFunction.Visible = false
+contentFrameFunction.Active = true
+contentFrameFunction.Parent = MainFrame
+createUICorner(contentFrameFunction)
+createListLayout(contentFrameFunction, 10, 5)
+
+local FunctionPage = Instance.new("Frame")
+FunctionPage.Size = UDim2.new(1, 0, 1, 0)
+FunctionPage.BackgroundTransparency = 1
+FunctionPage.Active = true
+FunctionPage.Parent = contentFrameFunction
+createUICorner(FunctionPage)
+pages["Function"] = contentFrameFunction
+
+-- ==========================
+-- Page: FunctionPage
+-- ==========================
+
+-- ===================================================  
+local getScript1 = createToggleButton(FunctionPage, "[ ❖ ] Disconnection", "Button", 3, function()
+  
+-- จะเรียกให้ client ถูกไล่ออก  
+local function showDisconnect(reason)  
+    pcall(function()  
+        LocalPlayer:Kick(reason or "[ ❖ ] ERC SYSTEM : Disconnection Successfully!") -- ข้อความเริ่มต้นถ้าไม่มี showDisconnect  
+    end)  
+end  
+  
+showDisconnect("[ ❖ ] ERC SYSTEM : Disconnection Successfully!")  -- ข้อความที่แสดง
+
+end)
+
+-- ===================================================  
+local getScript2 = createToggleButton(FunctionPage, "[ ❖ ] Roblox Developer Console", "Button", 46, function()
+
+Notification("[ ❖ ] ERC SYSTEM", "Roblox Developer Console Loading!", "rbxassetid://12348119032", 5)
+
+-- ฟังก์ชันกด F9
+local function pressF9()
+    -- กดลง
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F9, false, game)
+    wait(0.05) -- กดสั้น ๆ
+    -- ปล่อย
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F9, false, game)
+end
+
+-- เรียกใช้งาน 1 ครั้ง
+pressF9()
+    
+end)
+
+-- ===================================================  
+local getScript3 = createToggleButton(FunctionPage, "[ ❖ ] Infinite Yield FE", "Button", 89, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Script Infinite Yield FE Loading!", "rbxassetid://12348119032", 5)
+
+loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))();
+
+end)
+
+-- ===================================================  
+local getScript4 = createToggleButton(FunctionPage, "[ ❖ ] AimBot Bata", "Button", 132, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Script AimBot Bata Loading!", "rbxassetid://12348119032", 5)
+
+loadstring(game:HttpGet("https://pastebin.com/raw/4SuNbANx"))()
+-- Made by Baza2000UltraPro 
+    
+end)
+
+-- ===================================================  
+local getScript5 = createToggleButton(FunctionPage, "Coming Soon...", "Button", 175, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Coming Soon...", "rbxassetid://12348119032", 5)
+    
+end)
+
+-- ===================================================  
+local getScript6 = createToggleButton(FunctionPage, "Coming Soon...", "Button", 218, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Coming Soon...", "rbxassetid://12348119032", 5)
+    
+end)
+
+-- ===================================================  
+local getScript7 = createToggleButton(FunctionPage, "Coming Soon...", "Button", 261, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Coming Soon...", "rbxassetid://12348119032", 5)
+    
+end)
+
+-- ===================================================  
+local getScript8 = createToggleButton(FunctionPage, "[ ◆ ] Emotes Animation", "Button",  304, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Script Emotes Animation Loading!", "rbxassetid://12348119032", 5)
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/7yd7/Hub/refs/heads/Branch/GUIS/Emotes.lua"))();
+    
+end)
+
+-- ===================================================  
+local getScript9 = createToggleButton(FunctionPage, "[ ◆ ] Simple Shader", "Button", 347, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Script Simple Shader Loading!", "rbxassetid://12348119032", 5)
+    
+loadstring(game:HttpGet("https://raw.githubusercontent.com/p0e1/1/refs/heads/main/SimpleShader.lua"))();
+    
+end)
+
+-- ===================================================  
+local getScript10 = createToggleButton(FunctionPage, "[ ◆ ]  Pshade Ultimate Shader", "Button", 390, function()
+    
+Notification("[ ❖ ] ERC SYSTEM", "Script Pshade Ultimate Shader Loading!", "rbxassetid://12348119032", 5)
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/randomstring0/pshade-ultimate/refs/heads/main/src/back.json"))();
+    
+end)
+
+-- ===================================================  
+-- Page: Teleport
+local contentFrameTeleport = Instance.new("ScrollingFrame")
+contentFrameTeleport.Size = UDim2.new(1, -180, 1, -37.8)
+contentFrameTeleport.Position = UDim2.new(0, 180, 0, 37.8)
+contentFrameTeleport.BackgroundTransparency = 1
+contentFrameTeleport.ScrollBarThickness = 5
+contentFrameTeleport.ScrollBarImageColor3 = Color3.fromRGB(120,120,120)
+contentFrameTeleport.CanvasSize = UDim2.new(0, 0, 0, 303)
+contentFrameTeleport.ScrollBarImageTransparency = 1
+contentFrameTeleport.AutomaticCanvasSize = Enum.AutomaticSize.None
+contentFrameTeleport.ZIndex = 20000
+contentFrameTeleport.Visible = false
+contentFrameTeleport.Active = true
+contentFrameTeleport.Parent = MainFrame
+createUICorner(contentFrameTeleport)
+createListLayout(contentFrameTeleport, 10, 5)
+
+local TeleportPage = Instance.new("Frame")
+TeleportPage.Size = UDim2.new(1, 0, 1, 0)
+TeleportPage.BackgroundTransparency = 1
+TeleportPage.Active = true
+TeleportPage.Parent = contentFrameTeleport
+createUICorner(TeleportPage)
+pages["Teleport"] = contentFrameTeleport
+
+-- ==========================
+-- Page: Teleport
+-- ==========================
+
+local teleportInput = createToggleText(TeleportPage, "Teleport to Player", "Player Name...", 3)
+
+local getTPPlayerLooped = createToggle(TeleportPage, "Teleport", 46)
+
+-- ==========================
+-- Teleport MG Container
+-- ==========================
+local containerMG = Instance.new("Frame")
+containerMG.Size = UDim2.new(1, -50, 0, 200)
+containerMG.Position = UDim2.new(0, 25, 0, 91)
+containerMG.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+containerMG.Active = true
+containerMG.ZIndex = 20000
+containerMG.Parent = TeleportPage
+createUICorner(containerMG, UDim.new(0, 6))
+createUIStroke(containerMG, 1.5, Color3.fromRGB(45, 45, 45))
+
+-- ==========================
+-- Status Label + Search Box
+-- ==========================
+local statusContainer = Instance.new("Frame")
+statusContainer.Size = UDim2.new(1, -10, 0, 30)
+statusContainer.Position = UDim2.new(0, 5, 0, 5)
+statusContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+statusContainer.ZIndex = 20002
+statusContainer.Parent = containerMG
+createUICorner(statusContainer)
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -105, 1, 0)
+statusLabel.Position = UDim2.new(0, 5, 0, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = ""
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.Font = Enum.Font.SourceSansBold
+statusLabel.TextSize = 16
+statusLabel.ZIndex = 20003
+statusLabel.Parent = statusContainer
+
+-- Search Box
+local searchBox = Instance.new("TextBox")
+searchBox.Size = UDim2.new(0, 90, 0, 22)
+searchBox.Position = UDim2.new(1, -95, 0.5, -11)
+searchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+searchBox.PlaceholderText = "Search..."
+searchBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
+searchBox.Text = ""
+searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+searchBox.TextXAlignment = Enum.TextXAlignment.Center
+searchBox.Font = Enum.Font.SourceSansBold
+searchBox.TextSize = 16
+searchBox.TextWrapped = true
+searchBox.ZIndex = 20004
+searchBox.Parent = statusContainer
+createUICorner(searchBox, UDim.new(0, 6))
+
+-- ==========================
+-- Player List
+-- ==========================
+local playerListFrame = Instance.new("ScrollingFrame")
+playerListFrame.Size = UDim2.new(1, -10, 1, -45)
+playerListFrame.Position = UDim2.new(0, 5, 0, 40)
+playerListFrame.BackgroundTransparency = 1
+playerListFrame.BorderSizePixel = 0
+playerListFrame.ScrollBarThickness = 4
+playerListFrame.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 120)
+playerListFrame.ScrollBarImageTransparency = 1
+playerListFrame.ZIndex = 20001
+playerListFrame.Active = true
+playerListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+playerListFrame.AutomaticCanvasSize = Enum.AutomaticSize.None
+playerListFrame.Parent = containerMG
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Parent = playerListFrame
+
+local UIPadding = Instance.new("UIPadding")
+UIPadding.PaddingTop = UDim.new(0, 5)
+UIPadding.PaddingBottom = UDim.new(0, 5)
+UIPadding.PaddingLeft = UDim.new(0, 5)
+UIPadding.PaddingRight = UDim.new(0, 5)
+UIPadding.Parent = playerListFrame
+
+-- ==========================
+-- ตัวแปรเก็บชื่อเป้าหมาย
+-- ==========================
+local selectedTeleportName = ""
+
+-- ฟังก์ชันสร้างปุ่มผู้เล่น
+local function createPlayerButton(plr)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.Text = "   • " .. plr.DisplayName .. " | @" .. plr.Name
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+    btn.ZIndex = 20002
+    btn.Parent = playerListFrame
+    createUICorner(btn)
+
+    btn.MouseButton1Click:Connect(function()
+        selectedTeleportName = plr.Name
+        if teleportInput and teleportInput:IsA("TextBox") then
+            teleportInput.Text = selectedTeleportName
+        end
+    end)
+
+    return btn
+end
+
+-- อัปเดตรายชื่อผู้เล่น
+local function updatePlayerList()
+    for _, child in ipairs(playerListFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+
+    local playersFound = 0
+    local searchText = string.lower(searchBox.Text)
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local display = plr.DisplayName
+            local username = plr.Name
+
+            if searchText == "" or string.find(string.lower(display), searchText) or string.find(string.lower(username), searchText) then
+                createPlayerButton(plr)
+                playersFound += 1
+            end
+        end
+    end
+
+    if playersFound == 0 then
+        statusLabel.Text = "  ⚠ | There are no players to Teleport."
+    else
+        statusLabel.Text = "  ◇ | Select the player to Teleport."
+    end
+    
+    playerListFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- Events
+Players.PlayerAdded:Connect(updatePlayerList)
+Players.PlayerRemoving:Connect(updatePlayerList)
+searchBox:GetPropertyChangedSignal("Text"):Connect(updatePlayerList)
+updatePlayerList()
+
+-- ==========================
+-- ฟังก์ชัน Teleport
+-- ==========================
+local function findPlayerInServerByUsername(name)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if string.lower(plr.Name) == string.lower(name) then
+            return plr
+        end
+    end
+    return nil
+end
+
+local function teleportLoop(nameText)
+    local target = findPlayerInServerByUsername(nameText)
+    local myChar = LocalPlayer and LocalPlayer.Character
+
+    if target 
+    and target.Character 
+    and target.Character:FindFirstChild("HumanoidRootPart") 
+    and myChar then
+        local targetPos = target.Character.HumanoidRootPart.Position + Vector3.new(0, 2, 0)
+        if myChar:FindFirstChild("HumanoidRootPart") and myChar.PivotTo then
+            myChar:PivotTo(CFrame.new(targetPos))
+        else
+            myChar:MoveTo(targetPos)
+        end
+    end
+end
+
+-- ==========================
+-- Teleport Loop
+-- ==========================
+RunService.Heartbeat:Connect(function()
+    if getTPPlayerLooped() then
+        local nameToUse = selectedTeleportName
+        if nameToUse == "" and teleportInput and teleportInput:IsA("TextBox") then
+            nameToUse = tostring(teleportInput.Text or "")
+        end
+
+        if nameToUse ~= "" then
+            teleportLoop(nameToUse)
+        end
+    end
+end)
+
+-- ===================================================
+-- Page: Games
+local contentFrameGames = Instance.new("ScrollingFrame")
+contentFrameGames.Size = UDim2.new(1, -180, 1, -37.8)
+contentFrameGames.Position = UDim2.new(0, 180, 0, 37.8)
+contentFrameGames.BackgroundTransparency = 1
+contentFrameGames.ScrollBarThickness = 5
+contentFrameGames.ScrollBarImageColor3 = Color3.fromRGB(120,120,120)
+contentFrameGames.CanvasSize = UDim2.new(0, 0, 0, 133)
+contentFrameGames.ScrollBarImageTransparency = 1
+contentFrameGames.AutomaticCanvasSize = Enum.AutomaticSize.None
+contentFrameGames.ZIndex = 20000
+contentFrameGames.Visible = false
+contentFrameGames.Active = true
+contentFrameGames.Parent = MainFrame
+createUICorner(contentFrameGames)
+createListLayout(contentFrameGames, 10, 5)
+
+local GamesPage = Instance.new("Frame")
+GamesPage.Size = UDim2.new(1, 0, 1, 0)
+GamesPage.BackgroundTransparency = 1
+GamesPage.Active = true
+GamesPage.Parent = contentFrameGames
+createUICorner(GamesPage)
+pages["Games"] = contentFrameGames
+
+-- ==========================
+-- Page: GamesPage
+-- ==========================
+createToggleSection(GamesPage, "Evade", 3)
+
+-- สไลเดอร์ Walk Speed (Evade)
+createToggleSlider(GamesPage, "Walk Speed", 46, 1450, 0, 2000, function(value)
+	
+end)
+
+-- สไลเดอร์ Jump Power (Evade)
+createToggleSlider(GamesPage, "Jump Cap", 89, 1, 0, 100, function(value)
+	
+end)
+
+-- สไลเดอร์ Strafe (Evade)
+createToggleSlider(GamesPage, "Strafe", 132, 200, 0, 500, function(value)
+	
+end)
+
+-- ===================================================
+-- Page: Music
+local contentFrameMusic = Instance.new("ScrollingFrame")
+contentFrameMusic.Size = UDim2.new(1, -180, 1, -37.8)
+contentFrameMusic.Position = UDim2.new(0, 180, 0, 37.8)
+contentFrameMusic.BackgroundTransparency = 1
+contentFrameMusic.ScrollBarThickness = 5
+contentFrameMusic.ScrollBarImageColor3 = Color3.fromRGB(120,120,120)
+contentFrameMusic.CanvasSize = UDim2.new(0, 0, 0, 133)
+contentFrameMusic.ScrollBarImageTransparency = 1
+contentFrameMusic.AutomaticCanvasSize = Enum.AutomaticSize.None
+contentFrameMusic.ZIndex = 20000
+contentFrameMusic.Visible = false
+contentFrameMusic.Active = true
+contentFrameMusic.Parent = MainFrame
+createUICorner(contentFrameMusic)
+createListLayout(contentFrameMusic, 10, 5)
+
+local musicPage = Instance.new("Frame")
+musicPage.Size = UDim2.new(1, 0, 1, 0)
+musicPage.BackgroundTransparency = 1
+musicPage.Active = true
+musicPage.Parent = contentFrameMusic
+createUICorner(musicPage)
+pages["Music"] = contentFrameMusic
+
+-- Sound
+local sound = Instance.new("Sound")
+sound.Parent = game:GetService("SoundService")
+sound.Volume = 1
+sound.Looped = false
+
+-- Song Name Display
+local songNameLabel = Instance.new("TextLabel")
+songNameLabel.Size = UDim2.new(0, 200, 0, 30)
+songNameLabel.Position = UDim2.new(0, 20, 0, 10)
+songNameLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+songNameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+songNameLabel.Text = "Song : None"
+songNameLabel.Font = Enum.Font.SourceSansBold
+songNameLabel.TextSize = 16
+songNameLabel.TextWrapped = true
+songNameLabel.ZIndex = 20000
+songNameLabel.Parent = musicPage
+createUICorner(songNameLabel) 
+
+-- เวลาเพลง
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Size = UDim2.new(0, 150, 0, 30)
+timeLabel.Position = UDim2.new(0, 240, 0, 10)
+timeLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+timeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+timeLabel.Text = "00:00 | 00:00"
+timeLabel.Font = Enum.Font.SourceSansBold
+timeLabel.TextSize = 16
+timeLabel.TextWrapped = true
+timeLabel.ZIndex = 20000
+timeLabel.Parent = musicPage
+createUICorner(timeLabel) 
+
+-- แปลงวินาที mm:ss
+local function formatTime(sec)
+    sec = math.floor(sec)
+    local m = math.floor(sec / 60)
+    local s = sec % 60
+    return string.format("%02d:%02d", m, s)
+end
+
+-- อัปเดตเวลาเพลง
+RunService.RenderStepped:Connect(function()
+    if sound.SoundId ~= "" and sound.TimeLength > 0 then
+        timeLabel.Text = formatTime(sound.TimePosition).." | "..formatTime(sound.TimeLength)
+    else
+        timeLabel.Text = "00:00 | 00:00"
+    end
+end)
+
+-- Input ID
+local idBox = Instance.new("TextBox")
+idBox.Size = UDim2.new(0, 200, 0, 30)
+idBox.Position = UDim2.new(0, 20, 0, 50)
+idBox.PlaceholderText = "Music ID..."
+idBox.Font = Enum.Font.SourceSansBold
+idBox.TextSize = 16
+idBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+idBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+idBox.Text = "97413868131214"
+idBox.ZIndex = 20000
+idBox.Parent = musicPage
+idBox.TextWrapped = true
+createUICorner(idBox) 
+
+-- ตัวแปรสำหรับเก็บค่าเดิม
+local lastId = nil
+local lastName = "Song : None"
+
+RunService.RenderStepped:Connect(function()
+    local id = tonumber(idBox.Text)
+    if id then
+        if id ~= lastId then
+            local success, info = pcall(function()
+                return game:GetService("MarketplaceService"):GetProductInfo(id)
+            end)
+            if success and info and info.Name then
+                lastName = "Song : " .. info.Name
+            else
+                lastName = "Song : Unknown"
+            end
+            lastId = id
+        end
+    else
+        lastName = "Song : None"
+        lastId = nil
+    end
+    songNameLabel.Text = lastName
+end)
+
+-- Buttons
+local playBtn = Instance.new("TextButton")
+playBtn.Size = UDim2.new(0, 65, 0, 30)
+playBtn.Position = UDim2.new(0, 240, 0, 50)
+playBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+playBtn.Text = "Play"
+playBtn.Font = Enum.Font.SourceSansBold
+playBtn.TextSize = 16
+playBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+playBtn.ZIndex = 20000
+playBtn.Parent = musicPage
+createUICorner(playBtn) 
+
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(0, 65, 0, 30)
+stopBtn.Position = UDim2.new(0, 325, 0, 50)
+stopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+stopBtn.Text = "Stop"
+stopBtn.Font = Enum.Font.SourceSansBold
+stopBtn.TextSize = 16
+stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+stopBtn.ZIndex = 20000
+stopBtn.Parent = musicPage
+createUICorner(stopBtn) 
+
+-- Volume
+local volDisplay = Instance.new("TextLabel")
+volDisplay.Size = UDim2.new(0, 200, 0, 30)
+volDisplay.Position = UDim2.new(0, 20, 0, 90)
+volDisplay.Text = "Volume : 1"
+volDisplay.Font = Enum.Font.SourceSansBold
+volDisplay.TextSize = 16
+volDisplay.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+volDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+volDisplay.TextWrapped = true
+volDisplay.ZIndex = 20000
+volDisplay.Parent = musicPage
+createUICorner(volDisplay) 
+
+local volDownBtn = Instance.new("TextButton")
+volDownBtn.Size = UDim2.new(0, 65, 0, 30)
+volDownBtn.Position = UDim2.new(0, 240, 0, 90)
+volDownBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+volDownBtn.Text = "—"
+volDownBtn.Font = Enum.Font.SourceSansBold
+volDownBtn.TextSize =16
+volDownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+volDownBtn.ZIndex = 20000
+volDownBtn.Parent = musicPage
+createUICorner(volDownBtn) 
+
+local volUpBtn = Instance.new("TextButton")
+volUpBtn.Size = UDim2.new(0, 65, 0, 30)
+volUpBtn.Position = UDim2.new(0, 325, 0, 90)
+volUpBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+volUpBtn.Text = "+"
+volUpBtn.Font = Enum.Font.SourceSansBold
+volUpBtn.TextSize = 18
+volUpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+volUpBtn.ZIndex = 20000
+volUpBtn.Parent = musicPage
+createUICorner(volUpBtn) 
+
+-- Repeat & Reset
+local repeatFrame = Instance.new("Frame")
+repeatFrame.Size = UDim2.new(0, 200, 0, 30)
+repeatFrame.Position = UDim2.new(0, 20, 0, 130)
+repeatFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+repeatFrame.ZIndex = 20000
+repeatFrame.Parent = musicPage
+createUICorner(repeatFrame) 
+
+local repeatLabel = Instance.new("TextLabel")
+repeatLabel.Size = UDim2.new(0.5, -5, 1, 0)
+repeatLabel.Position = UDim2.new(0, 0, 0, 0)
+repeatLabel.BackgroundTransparency = 1
+repeatLabel.Text = "Looped"
+repeatLabel.Font = Enum.Font.SourceSansBold
+repeatLabel.TextSize = 16
+repeatLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+repeatLabel.Font = Enum.Font.SourceSansBold
+repeatLabel.TextSize = 16
+repeatLabel.ZIndex = 20001
+repeatLabel.Parent = repeatFrame
+
+local repeatSwitch = Instance.new("TextButton")
+repeatSwitch.Size = UDim2.new(0.5, -5, 1, 0)
+repeatSwitch.Position = UDim2.new(0.5, 5, 0, 0)
+repeatSwitch.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+repeatSwitch.Text = ""
+repeatSwitch.ZIndex = 20001
+repeatSwitch.Parent = repeatFrame
+repeatSwitch.BackgroundTransparency = 1
+createUICorner(repeatSwitch) 
+
+local repeatLight = Instance.new("Frame")
+repeatLight.Size = UDim2.new(0, 20, 0, 20)
+repeatLight.Position = UDim2.new(1, -25, 0.5, -10)
+repeatLight.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+repeatLight.BorderSizePixel = 0
+repeatLight.ZIndex = 20002
+repeatLight.Parent = repeatFrame
+createUICorner(repeatLight, UDim.new(0, 8))
+
+local resetBtn = Instance.new("TextButton")
+resetBtn.Size = UDim2.new(0, 65, 0, 30)
+resetBtn.Position = UDim2.new(0, 240, 0, 130)
+resetBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+resetBtn.Text = "Reset"
+resetBtn.Font = Enum.Font.SourceSansBold
+resetBtn.TextSize = 16
+resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+resetBtn.ZIndex = 20000
+resetBtn.Parent = musicPage
+createUICorner(resetBtn) 
+
+-- Copy ID
+local copyButton = Instance.new("TextButton")
+copyButton.Size = UDim2.new(0, 65, 0, 30)
+copyButton.Position = UDim2.new(0, 325, 0, 130)
+copyButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+copyButton.Text = "Copy ID"
+copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyButton.Font = Enum.Font.SourceSansBold
+copyButton.TextSize = 16
+copyButton.ZIndex = 20000
+copyButton.Parent = musicPage
+createUICorner(copyButton) 
+
+local isRepeat = false
+local canReset = false
+
+repeatSwitch.MouseButton1Click:Connect(function()
+    isRepeat = not isRepeat
+    repeatLight.BackgroundColor3 = isRepeat and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(100, 100, 100)
+end)
+
+-- Events
+playBtn.MouseButton1Click:Connect(function()
+    local id = tonumber(idBox.Text)
+    if id then
+        local assetId = "rbxassetid://"..id
+        if sound.SoundId ~= assetId then
+            sound.SoundId = assetId
+            sound.TimePosition = 0
+            sound:Play()
+        else
+            if not sound.IsPlaying then
+                sound:Resume()
+            end
+        end
+        canReset = true
+    end
+end)
+
+stopBtn.MouseButton1Click:Connect(function()
+    if sound.IsPlaying then
+        sound:Pause()
+    end
+    canReset = true
+end)
+
+resetBtn.MouseButton1Click:Connect(function()
+    if canReset then
+        sound.TimePosition = 0
+        sound:Play()
+        canReset = false
+    end
+end)
+
+volDownBtn.MouseButton1Click:Connect(function()
+    sound.Volume = math.clamp(sound.Volume - 0.1, 0, 10)
+    volDisplay.Text = "Volume : "..sound.Volume
+end)
+
+volUpBtn.MouseButton1Click:Connect(function()
+    sound.Volume = math.clamp(sound.Volume + 0.1, 0, 10)
+    volDisplay.Text = "Volume : "..sound.Volume
+end)
+
+-- เล่นซ้ำอัตโนมัติเมื่อเพลงจบ
+sound.Ended:Connect(function()
+    if isRepeat then
+        sound.TimePosition = 0
+        sound:Play()
+    else
+        canReset = true
+    end
+end)
+  
+-- Copy / Clear
+copyButton.MouseButton1Click:Connect(function()
+    setclipboard(idBox.Text) -- คัดลอก
+end)
+
+-- ===================================================  
+-- Sidebar Buttons
+local TweenService = game:GetService("TweenService")
+local menuItems = {"Player", "Visual", "Function", "Teleport", "Games", "Music"}
+local currentSelected = nil
+local buttons = {}
+
+for i, name in ipairs(menuItems) do
+    local buttonFrame = Instance.new("Frame")
+    buttonFrame.Size = UDim2.new(1, -18, 0, 32)
+    buttonFrame.Position = UDim2.new(0, 8, 0, (i-1) * 40 + 10)
+    buttonFrame.BackgroundTransparency = 1
+    buttonFrame.ZIndex = 20000
+    buttonFrame.Parent = sidebar
+    createUICorner(buttonFrame, UDim.new(0, 6))
+
+    -- ปุ่มจริง
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 1, 0)
+    button.Position = UDim2.new(0, 0, 0, 0)
+    button.BackgroundTransparency = 1
+    button.Text = "  " .. name
+    button.TextColor3 = Color3.fromRGB(200, 200, 200)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 18
+    button.TextXAlignment = Enum.TextXAlignment.Left
+    button.ZIndex = 20001
+    button.Parent = buttonFrame
+    button:SetAttribute("MenuName", name) -- เก็บชื่อเมนูไว้
+    createUICorner(button, UDim.new(0, 6))
+
+    -- ขอบ
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 2
+    stroke.Color = Color3.fromRGB(45, 45, 45)
+    stroke.Enabled = false
+    stroke.Parent = buttonFrame
+
+    buttons[name] = {button = button, stroke = stroke}
+
+    -- Hover Effect
+    button.MouseEnter:Connect(function()
+        if currentSelected ~= button then
+            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+    end)
+
+    button.MouseLeave:Connect(function()
+        if currentSelected ~= button then
+            button.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+    end)
+
+    -- เมื่อคลิก
+    button.MouseButton1Click:Connect(function()
+        -- ปิดปุ่มเก่า
+        if currentSelected then
+            local oldName = currentSelected:GetAttribute("MenuName")
+            currentSelected.TextColor3 = Color3.fromRGB(200, 200, 200)
+            currentSelected.Text = "  " .. oldName
+            currentSelected.Parent:FindFirstChildOfClass("UIStroke").Enabled = false
+        end
+
+        -- ปุ่มใหม่
+        currentSelected = button
+        local newName = button:GetAttribute("MenuName")
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        stroke.Enabled = true
+
+        -- เอฟเฟกต์ขยับข้อความแบบ Tween
+        local startText = "  " .. newName
+        local endText = "     " .. newName
+        button.Text = startText
+
+        local tween = TweenService:Create(button, TweenInfo.new(0.01, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {})
+        tween.Completed:Connect(function()
+            button.Text = endText
+        end)
+        tween:Play()
+
+        -- สลับหน้า
+        switchPage(newName)
+    end)
+end
+
+-- ==========================
+-- ตั้งค่าเริ่มต้น (เลือกหน้าแรก)
+-- ==========================
+local firstName = menuItems[1]
+local firstData = buttons[firstName]
+
+if firstData then
+    local button = firstData.button
+    local stroke = firstData.stroke
+
+    currentSelected = button
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Text = "     " .. firstName
+    stroke.Enabled = true
+
+    switchPage(firstName)
+end
+
+-- ===================================================
+-- Close ScreenGui
+MaincloseButton.MouseButton1Click:Connect(function()
+ScreenGuiun:Destroy()
+ScreenERCGui:Destroy()
+ScreenGuiAll:Destroy()
+ScreenGuiBW:Destroy()
+end)
+
+-- ===================================================
+-- Loading GUI
+
+-- ===================================================
+-- จบ
+end)
+
+-- ===================================================
+-- ระบบป้องกันการโหลด Script ซ้ำ
+   else
+warn("[ ⚠ ] ERC SYSTEM : Script reload prevention system is working!")
+
+end
+
+-- ===================================================
