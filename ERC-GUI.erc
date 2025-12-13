@@ -900,7 +900,7 @@ local function createToggleButton(parent, name, Text, yPos, scriptFunc)
     
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(0, 20, 0, 20)
-    b.Position = UDim2.new(1, -29.5, 0.5, -10)
+    b.Position = UDim2.new(1, -30.5, 0.5, -10)
     BackgroundTransparency = 0
     b.TextColor3 = Color3.fromRGB(100, 100, 100)
     b.Text = Text
