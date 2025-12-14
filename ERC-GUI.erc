@@ -476,121 +476,94 @@ centerMainIconButton()
 
 -- ===================================================
 -- ระบบการแสดงผล GUI แบบ Smooth
--- Import Services
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local workspace = game:GetService("Workspace")
-
--- Helper Function: Enable Dragging for GUI
-local function enableDragging(frame)
-    if not frame then return end
-
-    local dragging = false
-    local dragStart, startPos
-
-    local function updateDrag(input)
-        if not dragging or not dragStart or not startPos then return end
-
-        local delta = input.Position - dragStart
-        frame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
-
-    -- Input began (start dragging)
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 
-        or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-
-            -- Stop dragging when input ends
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
+-- Utility Tween Function
+local function tweenPosition(instance, targetPos, duration, callback)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(instance, tweenInfo, {Position = targetPos})
+    tween.Completed:Connect(function()
+        if callback then callback() end
     end)
-
-    -- Input changed (dragging position)
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement 
-        or input.UserInputType == Enum.UserInputType.Touch then
-            updateDrag(input)
-        end
-    end)
-
-    -- Sync UserInputService to support dragging
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateDrag(input)
-        end
-    end)
-end
-
--- Helper Function: Create Smooth Sliding Effect for Frames
-local function slideFrame(frame, targetPosition, duration, easingStyle, easingDirection)
-    duration = duration or 0.5 -- Default duration
-    easingStyle = easingStyle or Enum.EasingStyle.Quad
-    easingDirection = easingDirection or Enum.EasingDirection.Out
-
-    local tweenInfo = TweenInfo.new(duration, easingStyle, easingDirection)
-    local tween = TweenService:Create(frame, tweenInfo, { Position = targetPosition })
     tween:Play()
-
-    -- Return the tween object for chaining if needed
     return tween
 end
 
--- Initial Setup for GUI Positions
-local function setupPositions()
-    local viewportSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-
-    -- MainFrame starts offscreen at the bottom
-    MainFrame.Position = UDim2.new(0.5, -MainFrame.AbsoluteSize.X / 2, 0, viewportSize.Y)
-    MainFrame.Visible = true -- Let it animate into view
-
-    -- MainiconButton also starts offscreen
-    MainiconButton.Position = UDim2.new(0.5, -MainiconButton.AbsoluteSize.X / 2, 0, viewportSize.Y)
-    MainiconButton.Visible = false
+-- แก้ไข position สำหรับเลื่อนออก(ล่าง) และเข้า(ตรงกลาง)
+local function getOutOfScreenPosition(frame)
+    local viewportSize = camera and camera.ViewportSize or Vector2.new(1280, 720)
+    -- เลื่อนไปต่ำกว่าขอบจอ
+    return UDim2.new(0, frame.Position.X.Offset, 0, viewportSize.Y + 50)
 end
 
--- Restore or Minimize Based on Button Events
+local function getCenterScreenPosition(frame)
+    local viewportSize = camera and camera.ViewportSize or Vector2.new(1280, 720)
+    if frame == MainFrame then
+        return UDim2.new(
+            0, (viewportSize.X - frame.AbsoluteSize.X) / 2,
+            0, (viewportSize.Y - frame.AbsoluteSize.Y) / 10
+        )
+    elseif frame == MainiconButton then
+        return UDim2.new(
+            0, (viewportSize.X - frame.AbsoluteSize.X) / 2,
+            0, (viewportSize.Y - frame.AbsoluteSize.Y) / 100
+        )
+    end
+end
+
+-- Animations for MainFrame
+local function TweenMainFrameOut(callback)
+    tweenPosition(MainFrame, getOutOfScreenPosition(MainFrame), 0.35, function()
+        MainFrame.Visible = false
+        if callback then callback() end
+    end)
+end
+
+local function TweenMainFrameIn()
+    MainFrame.Position = getOutOfScreenPosition(MainFrame)
+    MainFrame.Visible = true
+    tweenPosition(MainFrame, getCenterScreenPosition(MainFrame), 0.35)
+end
+
+-- Animations for MainiconButton
+local function TweenIconButtonIn()
+    MainiconButton.Position = getOutOfScreenPosition(MainiconButton)
+    MainiconButton.Visible = true
+    tweenPosition(MainiconButton, getCenterScreenPosition(MainiconButton), 0.35)
+end
+
+local function TweenIconButtonOut(callback)
+    tweenPosition(MainiconButton, getOutOfScreenPosition(MainiconButton), 0.35, function()
+        MainiconButton.Visible = false
+        if callback then callback() end
+    end)
+end
+
+-- แทนที่ logic การแสดง/ซ่อน MainFrame กับ MainiconButton ด้วยการทวีนนิ่งและดีเลย์
+
+-- Restore/Minimize (แก้ไขส่วนนี้)
 MainiconText.MouseButton1Click:Connect(function()
-    -- Hide the icon and slide MainFrame into view
-    wait(0.5) -- Ensure animation order
-    MainiconButton.Visible = false
-    local viewportSize = workspace.CurrentCamera.ViewportSize
-    slideFrame(MainFrame, UDim2.new(0.5, -MainFrame.AbsoluteSize.X / 2, 0.5, -MainFrame.AbsoluteSize.Y / 2), 0.5)
+    TweenIconButtonOut(function()  -- 1. เลื่อนไอคอนลงล่าง
+        TweenMainFrameIn()        -- 2. เปิด Main GUI ขึ้น (เลื่อนเข้ากลาง)
+    end)
 end)
 
 MainminimizeButton.MouseButton1Click:Connect(function()
-    local viewportSize = workspace.CurrentCamera.ViewportSize
-    -- Slide MainFrame out and then show the icon
-    slideFrame(MainFrame, UDim2.new(0.5, -MainFrame.AbsoluteSize.X / 2, 0, viewportSize.Y), 0.5)
-        :Completed:Connect(function()
-            MainFrame.Visible = false
-            MainiconButton.Visible = true
-            slideFrame(MainiconButton, UDim2.new(0.5, -MainiconButton.AbsoluteSize.X / 2, 0, viewportSize.Y - MainiconButton.AbsoluteSize.Y - 10), 0.5)
-        end)
+    TweenMainFrameOut(function()  -- 1. เลื่อน Main Frame ลงล่าง
+        TweenIconButtonIn()       -- 2. แสดง iconBtn ขึ้น (เลื่อนเข้ากลาง)
+    end)
 end)
 
--- Automatically Adjust GUI for Screen Resizing
+-- เมื่อเริ่มต้นโชว์ MainFrame และซ่อน icon 
+MainFrame.Visible = true
+MainiconButton.Visible = false
+MainFrame.Position = getCenterScreenPosition(MainFrame)
+MainiconButton.Position = getOutOfScreenPosition(MainiconButton)
+
+-- Center on resize (เช็คว่ากำลังโชว์ตัวไหนค่อย center)
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-    setupPositions()
+    if MainFrame.Visible then MainFrame.Position = getCenterScreenPosition(MainFrame) end
+    if MainiconButton.Visible then MainiconButton.Position = getCenterScreenPosition(MainiconButton) end
 end)
 
--- Enable Dragging for GUI
-enableDragging(MainFrame)
-enableDragging(MainiconButton)
-
--- Setup Initial Positions on Load
-setupPositions()
 
 -- ===================================================
 -- Restore / Minimize
